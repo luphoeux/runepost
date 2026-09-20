@@ -1,0 +1,172 @@
+---
+import { getWoWItem } from '../../utils/blizzard';
+
+interface Props {
+    id: number | string;
+    locale?: string;
+}
+
+const { id, locale = 'es_MX' } = Astro.props;
+
+// Consultar la API o el caché persistente (durante el build estático)
+const itemData = await getWoWItem(Number(id), locale);
+
+// Determinar el color según la calidad del objeto
+const qualityColors: Record<string, string> = {
+    POOR: '#9d9d9d',
+    COMMON: '#ffffff',
+    UNCOMMON: '#1eff00',
+    RARE: '#0070dd',
+    EPIC: '#a335ee',
+    LEGENDARY: '#ff8000',
+    ARTIFACT: '#e6cc80',
+    HEIRLOOM: '#00ccff'
+};
+
+const qualityType = itemData?.quality?.type || 'COMMON';
+const itemColor = qualityColors[qualityType] || '#ffffff';
+---
+
+{itemData ? (
+    <span class="wow-item-link">
+        <a href={`https://www.wowhead.com/item=${itemData.id}`} target="_blank" rel="noreferrer" style={`color: ${itemColor};`}>
+            [{itemData.name}]
+        </a>
+        <span class="wow-tooltip">
+            <span class="tooltip-header">
+                {itemData.iconUrl && <img src={itemData.iconUrl} alt={itemData.name} class="tooltip-icon" />}
+                <span class="tooltip-name" style={`color: ${itemColor};`}>{itemData.name}</span>
+            </span>
+            <span class="tooltip-divider"></span>
+            <span class="tooltip-body">
+                {itemData.quality.name && (
+                    <span class="tooltip-line" style={`color: ${itemColor};`}>{itemData.quality.name}</span>
+                )}
+                {itemData.itemClass && (
+                    <span class="tooltip-line">
+                        {itemData.itemClass}{itemData.itemSubclass ? ` · ${itemData.itemSubclass}` : ''}
+                    </span>
+                )}
+                {itemData.binding && (
+                    <span class="tooltip-line tooltip-binding">{itemData.binding}</span>
+                )}
+                {itemData.requiredLevel && (
+                    <span class="tooltip-line tooltip-requirement">{itemData.requiredLevel}</span>
+                )}
+                {itemData.description && (
+                    <span class="tooltip-description">{itemData.description}</span>
+                )}
+            </span>
+            <span class="tooltip-divider"></span>
+            <span class="tooltip-footer">ID: {itemData.id}</span>
+        </span>
+    </span>
+) : (
+    <span>Objeto desconocido ({id})</span>
+)}
+
+<style is:global>
+    .wow-item-link {
+        position: relative;
+        display: inline-block;
+        font-weight: 600;
+        text-decoration: none;
+    }
+    
+    .wow-item-link a {
+        text-decoration: none;
+        transition: filter 0.2s;
+    }
+    
+    .wow-item-link a:hover {
+        filter: brightness(1.2);
+        text-decoration: underline;
+    }
+
+    .wow-tooltip {
+        visibility: hidden;
+        opacity: 0;
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%) translateY(-10px);
+        background: linear-gradient(180deg, rgba(38, 32, 25, 0.98) 0%, rgba(13, 11, 9, 0.98) 100%);
+        border: 1px solid #a1844a;
+        box-shadow: inset 0 0 0 1px #14100b, 0 4px 14px rgba(0, 0, 0, 0.85);
+        border-radius: 3px;
+        padding: 0.65rem 0.75rem;
+        width: 300px;
+        z-index: 100;
+        transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
+        pointer-events: none;
+        color: #f5f0e6;
+        font-family: var(--font-atkinson), sans-serif;
+        font-size: 0.85rem;
+        text-align: left;
+        line-height: 1.45;
+    }
+
+    .wow-item-link:hover .wow-tooltip {
+        visibility: visible;
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+
+    .tooltip-header {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+    }
+
+    .tooltip-icon {
+        width: 36px;
+        height: 36px;
+        border: 1px solid #4a4a4a;
+        border-radius: 3px;
+        background-color: #000;
+        flex-shrink: 0;
+    }
+
+    .tooltip-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .tooltip-divider {
+        display: block;
+        height: 1px;
+        margin: 0.5rem 0;
+        background-color: rgba(161, 132, 74, 0.45);
+    }
+
+    .tooltip-body {
+        display: block;
+    }
+
+    .tooltip-line {
+        display: block;
+        color: #c9c2b0;
+    }
+
+    .tooltip-binding {
+        color: #e6c96a;
+    }
+
+    .tooltip-requirement {
+        color: #ff7d6b;
+    }
+
+    .tooltip-description {
+        display: block;
+        margin-top: 0.35rem;
+        color: #f5f0e6;
+        white-space: pre-line;
+    }
+
+    .tooltip-footer {
+        display: block;
+        color: #8a8374;
+        font-size: 0.75rem;
+    }
+</style>

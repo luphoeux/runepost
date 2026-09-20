@@ -1,0 +1,79 @@
+---
+import { getWoWTokenPrice } from '../utils/blizzard';
+
+type Region = 'us' | 'eu';
+
+interface RegionInfo {
+    code: Region;
+    label: string;
+}
+
+const regions: RegionInfo[] = [
+    { code: 'us', label: 'América (US)' },
+    { code: 'eu', label: 'Europa (EU)' },
+];
+
+const tokenPrices = await Promise.all(
+    regions.map(async ({ code, label }) => {
+        const priceCopper = await getWoWTokenPrice(code);
+        const priceGold = priceCopper ? Math.floor(priceCopper / 10000) : null;
+        return {
+            code,
+            label,
+            formatted: priceGold ? `${new Intl.NumberFormat('es-ES').format(priceGold)} g` : 'No disponible',
+        };
+    })
+);
+---
+
+<section class="token-widget-section">
+    <div class="section-header">
+        <h2>Precio del <span class="text-gradient">WoW Token</span></h2>
+        <span class="badge badge-gold">Actualización diaria</span>
+    </div>
+    <div class="token-grid">
+        {
+            tokenPrices.map((region) => (
+                <div class="card token-card">
+                    <h3 class="token-region">{region.label}</h3>
+                    <p class="token-price text-gradient">{region.formatted}</p>
+                    <p class="token-note">Precio estático generado en el build del sitio.</p>
+                </div>
+            ))
+        }
+    </div>
+</section>
+
+<style>
+    .token-widget-section {
+        margin-bottom: 5rem;
+    }
+
+    .token-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 2rem;
+    }
+
+    .token-card {
+        text-align: center;
+        padding: 2rem 1.5rem;
+    }
+
+    .token-region {
+        font-size: 1.25rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .token-price {
+        font-size: 2.25rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+    }
+
+    .token-note {
+        color: var(--color-text-muted);
+        font-size: 0.85rem;
+        margin-bottom: 0;
+    }
+</style>

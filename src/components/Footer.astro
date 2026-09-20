@@ -1,0 +1,110 @@
+---
+const today = new Date();
+import { SITE_TITLE } from '../consts';
+---
+
+<footer class="site-footer">
+	<div class="footer-content">
+		<div class="footer-brand">
+			<h3><span class="text-gradient">{SITE_TITLE}</span></h3>
+			<p>La comunidad líder en guías, noticias y contenido sobre World of Warcraft para jugadores de habla hispana.</p>
+		</div>
+		
+		<div class="footer-links">
+			<div class="link-group">
+				<h4>Comunidad</h4>
+				<a href="#">Discord</a>
+				<a href="#">Twitter / X</a>
+				<a href="#">YouTube</a>
+			</div>
+			<div class="link-group">
+				<h4>Recursos</h4>
+				<a href="/blog">Guías de Clase</a>
+				<a href="#">Noticias</a>
+				<a href="#">Addons</a>
+			</div>
+			<div class="link-group">
+				<h4>Sitio</h4>
+				<a href="/about">Sobre Nosotros</a>
+				<a href="#">Contacto</a>
+				<a href="#">Privacidad</a>
+			</div>
+		</div>
+	</div>
+	
+	<div class="footer-bottom">
+		<p>&copy; {today.getFullYear()} {SITE_TITLE}. Todos los derechos reservados. World of Warcraft es una marca registrada de Blizzard Entertainment.</p>
+	</div>
+</footer>
+
+<style>
+	.site-footer {
+		background-color: #050508;
+		border-top: 1px solid var(--color-border);
+		padding: 4rem 1rem 2rem 1rem;
+		margin-top: 4rem;
+	}
+	
+	.footer-content {
+		width: 1200px;
+		max-width: 100%;
+		margin: 0 auto;
+		display: grid;
+		grid-template-columns: 1.5fr 2fr;
+		gap: 4rem;
+		margin-bottom: 3rem;
+	}
+	
+	.footer-brand p {
+		color: var(--color-text-muted);
+		font-size: 0.95rem;
+		max-width: 400px;
+	}
+	
+	.footer-links {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 2rem;
+	}
+	
+	.link-group h4 {
+		color: white;
+		font-size: 1.1rem;
+		margin-bottom: 1.25rem;
+	}
+	
+	.link-group a {
+		display: block;
+		color: var(--color-text-muted);
+		text-decoration: none;
+		margin-bottom: 0.75rem;
+		font-size: 0.95rem;
+		transition: color 0.2s ease;
+	}
+	
+	.link-group a:hover {
+		color: var(--color-gold);
+		text-shadow: none; /* overrides global.css to keep it subtle */
+	}
+	
+	.footer-bottom {
+		width: 1200px;
+		max-width: 100%;
+		margin: 0 auto;
+		border-top: 1px solid var(--color-border-light);
+		padding-top: 2rem;
+		text-align: center;
+		color: var(--color-text-muted);
+		font-size: 0.85rem;
+	}
+	
+	@media (max-width: 768px) {
+		.footer-content {
+			grid-template-columns: 1fr;
+			gap: 2rem;
+		}
+		.footer-links {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+</style>

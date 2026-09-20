@@ -1,0 +1,381 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { listQuests } from '../../utils/quests';
+import { formatGold } from '../../utils/quest-types';
+import type { Quest } from '../../utils/quest-types';
+
+const quests = await listQuests();
+
+const qualityColors: Record<string, string> = {
+    Poor: '#9d9d9d',
+    Common: '#ffffff',
+    Uncommon: '#1eff00',
+    Rare: '#0070dd',
+    Epic: '#a335ee',
+    Legendary: '#ff8000',
+};
+
+function qualityColor(q: string): string {
+    return qualityColors[q] ?? '#fff';
+}
+
+const categoryIcons: Record<string, string> = {
+    Principal: '!',
+    Secundaria: '?',
+    Clase: 'C',
+    Diario: 'D',
+};
+---
+
+<!doctype html>
+<html lang="es">
+    <head>
+        <BaseHead
+            title="Base de Datos de Misiones — WoW Forever"
+            description="Consulta todas las misiones de WoW Forever: cadenas de quests, recompensas, NPCs y zonas."
+        />
+    </head>
+    <body>
+        <Header />
+
+        <main>
+            <div class="page-header">
+                <div class="page-header-text">
+                    <span class="badge badge-gold">WoW Forever</span>
+                    <h1>Base de Datos de <span class="text-gradient">Misiones</span></h1>
+                    <p class="subtitle">
+                        {quests.length} {quests.length === 1 ? 'mision registrada' : 'misiones registradas'}.
+                        Los datos se extraen directamente del juego.
+                    </p>
+                </div>
+                <div class="stats-row">
+                    <div class="stat-chip">
+                        <span class="stat-value">{quests.length}</span>
+                        <span class="stat-label">Misiones</span>
+                    </div>
+                    <div class="stat-chip">
+                        <span class="stat-value">{new Set(quests.map(q => q.chain_name).filter(Boolean)).size}</span>
+                        <span class="stat-label">Cadenas</span>
+                    </div>
+                    <div class="stat-chip">
+                        <span class="stat-value">{new Set(quests.map(q => q.zone).filter(Boolean)).size}</span>
+                        <span class="stat-label">Zonas</span>
+                    </div>
+                </div>
+            </div>
+
+            {quests.length === 0 ? (
+                <div class="empty-state">
+                    <div class="empty-icon">?</div>
+                    <p>No hay misiones registradas aun.</p>
+                </div>
+            ) : (
+                <div class="quest-grid">
+                    {quests.map((quest: Quest) => (
+                        <a href={`/quests/${quest.id}`} class="quest-card" id={`quest-${quest.id}`}>
+                            <div class="quest-card-top">
+                                <span class="quest-icon" title={quest.category ?? 'Normal'}>
+                                    {categoryIcons[quest.category ?? ''] ?? '!'}
+                                </span>
+                                <div class="quest-meta">
+                                    {quest.chain_name && (
+                                        <span class="chain-label">{quest.chain_name}</span>
+                                    )}
+                                    <span class="quest-id">#{quest.id}</span>
+                                </div>
+                            </div>
+
+                            <h2 class="quest-title">{quest.title}</h2>
+
+                            {quest.description && (
+                                <p class="quest-excerpt">
+                                    {quest.description.replace(/<[^>]+>/g, '').slice(0, 120)}…
+                                </p>
+                            )}
+
+                            <div class="quest-footer">
+                                <div class="quest-tags">
+                                    {quest.zone && <span class="tag tag-zone">{quest.zone}</span>}
+                                    {quest.class_req && <span class="tag tag-class">{quest.class_req}</span>}
+                                    {quest.race_req && <span class="tag tag-race">{quest.race_req}</span>}
+                                    {quest.min_level && <span class="tag">Nv. {quest.min_level}</span>}
+                                </div>
+                                <div class="quest-rewards-preview">
+                                    {quest.reward_xp ? (
+                                        <span class="xp-badge">{quest.reward_xp.toLocaleString()} XP</span>
+                                    ) : null}
+                                    {quest.reward_items && quest.reward_items.length > 0 && (
+                                        <span
+                                            class="item-dot"
+                                            style={`color: ${qualityColor(quest.reward_items[0].quality ?? 'Common')}`}
+                                            title={quest.reward_items[0].name}
+                                        >
+                                            +{quest.reward_items.length} objeto{quest.reward_items.length > 1 ? 's' : ''}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        </a>
+                    ))}
+                </div>
+            )}
+        </main>
+
+        <Footer />
+    </body>
+</html>
+
+<style>
+    .page-header {
+        margin-bottom: 3rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .page-header-text .badge {
+        margin-bottom: 0.75rem;
+    }
+
+    .page-header-text h1 {
+        margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+        color: var(--color-text-muted);
+        font-size: 1.05rem;
+        margin: 0;
+    }
+
+    .stats-row {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .stat-chip {
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: 0.75rem 1.25rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 90px;
+    }
+
+    .stat-value {
+        font-family: var(--font-heading);
+        font-size: 1.75rem;
+        font-weight: 900;
+        color: var(--color-gold);
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-top: 0.25rem;
+    }
+
+    /* Quest Grid */
+    .quest-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .quest-card {
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.25s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .quest-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, #c8a951, #f0d060);
+        opacity: 0;
+        transition: opacity 0.25s ease;
+    }
+
+    .quest-card:hover {
+        border-color: #c8a951;
+        transform: translateY(-3px);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(200, 169, 81, 0.12);
+        color: inherit;
+        text-shadow: none;
+    }
+
+    .quest-card:hover::before {
+        opacity: 1;
+    }
+
+    .quest-card-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .quest-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #c8a951, #f0d060);
+        color: #1a1208;
+        font-weight: 900;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-family: var(--font-heading);
+    }
+
+    .quest-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .chain-label {
+        font-size: 0.7rem;
+        color: #c8a951;
+        background: rgba(200, 169, 81, 0.1);
+        border: 1px solid rgba(200, 169, 81, 0.3);
+        border-radius: var(--radius-full);
+        padding: 0.15rem 0.6rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 180px;
+    }
+
+    .quest-id {
+        font-size: 0.75rem;
+        color: var(--color-text-muted);
+        font-family: monospace;
+    }
+
+    .quest-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 0;
+        color: #f0e6c8;
+        line-height: 1.3;
+    }
+
+    .quest-excerpt {
+        font-size: 0.875rem;
+        color: var(--color-text-muted);
+        line-height: 1.55;
+        margin: 0;
+        flex: 1;
+    }
+
+    .quest-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-top: auto;
+        padding-top: 0.75rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .quest-tags {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+    }
+
+    .tag {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.55rem;
+        border-radius: var(--radius-full);
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: var(--color-text-muted);
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .tag-zone { color: #7ec8e3; border-color: rgba(126, 200, 227, 0.3); background: rgba(126, 200, 227, 0.08); }
+    .tag-class { color: #c4a35a; border-color: rgba(196, 163, 90, 0.3); background: rgba(196, 163, 90, 0.08); }
+    .tag-race { color: #a78bdb; border-color: rgba(167, 139, 219, 0.3); background: rgba(167, 139, 219, 0.08); }
+
+    .quest-rewards-preview {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-shrink: 0;
+    }
+
+    .xp-badge {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #a8d8a8;
+        background: rgba(168, 216, 168, 0.1);
+        border: 1px solid rgba(168, 216, 168, 0.25);
+        padding: 0.2rem 0.55rem;
+        border-radius: var(--radius-full);
+    }
+
+    .item-dot {
+        font-size: 0.72rem;
+        font-weight: 700;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 6rem 2rem;
+        color: var(--color-text-muted);
+    }
+
+    .empty-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #c8a951, #f0d060);
+        color: #1a1208;
+        font-size: 2.5rem;
+        font-weight: 900;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        font-family: var(--font-heading);
+        opacity: 0.4;
+    }
+
+    @media (max-width: 640px) {
+        .quest-grid {
+            grid-template-columns: 1fr;
+        }
+        .stats-row {
+            justify-content: center;
+        }
+    }
+</style>

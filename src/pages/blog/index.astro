@@ -1,0 +1,209 @@
+---
+import { Image } from 'astro:assets';
+import { getCollection, type CollectionEntry } from 'astro:content';
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import FormattedDate from '../../components/FormattedDate.astro';
+import Header from '../../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+
+const allPosts = (await getCollection('blog')).sort(
+	(a: CollectionEntry<'blog'>, b: CollectionEntry<'blog'>) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
+
+const featuredPostIndex = allPosts.findIndex(post => post.data.featured);
+const heroPostIndex = featuredPostIndex !== -1 ? featuredPostIndex : 0;
+const heroPost = allPosts[heroPostIndex];
+const otherPosts = allPosts.filter((_, index) => index !== heroPostIndex);
+---
+
+<!doctype html>
+<html lang="es">
+	<head>
+		<BaseHead title={`Noticias y Guías - ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+		<style>
+			main {
+				width: 1200px;
+				max-width: 100%;
+				margin: 0 auto;
+				padding: 2rem 1rem;
+			}
+			.page-header {
+				margin-bottom: 2rem;
+				border-bottom: 1px solid var(--color-border-light);
+				padding-bottom: 1rem;
+				text-align: center;
+			}
+            
+            /* Hero Post Styles */
+            .hero-post {
+                margin-bottom: 4rem;
+                padding: 0;
+                overflow: hidden;
+                border: 1px solid var(--color-border);
+            }
+            .hero-image-container {
+                position: relative;
+                width: 100%;
+                height: 500px;
+            }
+            .hero-img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                transition: transform 0.5s ease;
+            }
+            .hero-post:hover .hero-img {
+                transform: scale(1.05);
+            }
+            .hero-overlay {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: linear-gradient(to top, rgba(23, 23, 23, 1) 0%, rgba(23, 23, 23, 0.8) 50%, transparent 100%);
+                padding: 3rem 2rem 2rem 2rem;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            .hero-overlay h2 {
+                margin: 0;
+                font-size: clamp(1.8rem, 4vw, 3rem);
+                color: #fff;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            }
+            .hero-overlay p {
+                margin: 0;
+                font-size: 1.1rem;
+                color: var(--color-text-main);
+                max-width: 800px;
+            }
+            
+            /* Grid Posts Styles */
+			ul {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+				gap: 2rem;
+				list-style-type: none;
+				margin: 0;
+				padding: 0;
+			}
+			ul li * {
+				text-decoration: none;
+			}
+            .news-card {
+                padding: 0;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+            }
+            .news-card a {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+            }
+			.news-img {
+				width: 100%;
+				height: 220px;
+				object-fit: cover;
+				border-bottom: 1px solid var(--color-border);
+				transition: transform 0.3s ease;
+			}
+            .news-card:hover .news-img {
+                transform: scale(1.05);
+            }
+            .img-wrapper {
+                overflow: hidden;
+            }
+            .news-content {
+                padding: 1.5rem;
+                flex-grow: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+			.title {
+				margin: 0.5rem 0;
+				color: var(--color-text-heading);
+				line-height: 1.3;
+				font-size: 1.4rem;
+                transition: color 0.2s;
+			}
+			.date {
+				margin: auto 0 0 0;
+				color: var(--color-text-muted);
+				font-size: 0.9rem;
+			}
+			.news-card:hover .title {
+				color: var(--color-gold);
+			}
+            .mb-2 {
+                margin-bottom: 0.5rem;
+            }
+
+			@media (max-width: 720px) {
+                .hero-image-container {
+                    height: 400px;
+                }
+				ul {
+					grid-template-columns: 1fr;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<div class="page-header">
+				<h1>Noticias y <span class="text-gradient">Actualizaciones</span></h1>
+				<p>Mantente al día con las últimas novedades y guías de World of Warcraft.</p>
+			</div>
+            
+            {heroPost && (
+                <section class="hero-post card">
+                    <a href={`/blog/${heroPost.id}/`}>
+                        <div class="hero-image-container">
+                            {heroPost.data.heroImage && (
+                                <Image width={1200} height={600} src={heroPost.data.heroImage} alt="" class="hero-img" />
+                            )}
+                            <div class="hero-overlay">
+                                <span class="badge badge-gold">{heroPost.data.category}</span>
+                                <h2>{heroPost.data.title}</h2>
+                                <p>{heroPost.data.description}</p>
+                                <span class="date"><FormattedDate date={heroPost.data.pubDate} /></span>
+                            </div>
+                        </div>
+                    </a>
+                </section>
+            )}
+
+			<section class="posts-grid">
+				<ul>
+					{
+						otherPosts.map((post) => (
+							<li class="card news-card">
+								<a href={`/blog/${post.id}/`}>
+                                    <div class="img-wrapper">
+									    {post.data.heroImage && (
+										    <Image width={720} height={360} src={post.data.heroImage} alt="" class="news-img" />
+									    )}
+                                    </div>
+                                    <div class="news-content">
+                                        <span class="badge badge-blue mb-2">{post.data.category}</span>
+									    <h4 class="title">{post.data.title}</h4>
+									    <p class="date">
+										    <FormattedDate date={post.data.pubDate} />
+									    </p>
+                                    </div>
+								</a>
+							</li>
+						))
+					}
+				</ul>
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>

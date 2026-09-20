@@ -1,0 +1,75 @@
+---
+interface Props {
+    type?: 'info' | 'warning' | 'danger';
+    title?: string;
+}
+
+const { type = 'info', title } = Astro.props;
+
+let bgColor, borderColor, icon;
+
+switch (type) {
+    case 'warning':
+        bgColor = 'rgba(255, 209, 0, 0.1)';
+        borderColor = 'var(--color-gold)';
+        icon = '!';
+        break;
+    case 'danger':
+        bgColor = 'rgba(239, 68, 68, 0.1)';
+        borderColor = '#ef4444';
+        icon = 'x';
+        break;
+    case 'info':
+    default:
+        bgColor = 'rgba(115, 115, 115, 0.1)';
+        borderColor = 'var(--color-border-light)';
+        icon = 'i';
+        break;
+}
+---
+
+<div class="mdx-alert" style={`background-color: ${bgColor}; border-left-color: ${borderColor};`}>
+    <div class="alert-icon" style={`background-color: ${borderColor};`}>{icon}</div>
+    <div class="alert-content">
+        {title && <strong class="alert-title">{title}</strong>}
+        <slot />
+    </div>
+</div>
+
+<style>
+    .mdx-alert {
+        display: flex;
+        gap: 1rem;
+        padding: 1.5rem;
+        margin: 2rem 0;
+        border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+        border-left-width: 4px;
+        border-left-style: solid;
+    }
+    .alert-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        color: #fff;
+        font-weight: bold;
+        flex-shrink: 0;
+        font-size: 0.9rem;
+    }
+    .alert-content {
+        color: var(--color-text-main);
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+    .alert-title {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+        color: var(--color-text-heading);
+    }
+    .alert-content > :global(p:last-child) {
+        margin-bottom: 0;
+    }
+</style>

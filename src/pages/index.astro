@@ -1,0 +1,269 @@
+---
+import { Image } from 'astro:assets';
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import { getCollection, type CollectionEntry } from 'astro:content';
+import FormattedDate from '../components/FormattedDate.astro';
+import WoWTokenWidget from '../components/WoWTokenWidget.astro';
+
+// Obtener los últimos 3 posts para mostrar en la página principal
+const posts = (await getCollection('blog'))
+	.sort((a: CollectionEntry<'blog'>, b: CollectionEntry<'blog'>) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+	.slice(0, 3);
+---
+
+<!doctype html>
+<html lang="es">
+	<head>
+		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+	</head>
+	<body>
+		<Header />
+		
+		<section class="hero-section">
+			<div class="hero-content">
+				<span class="badge badge-gold">The War Within Ya Disponible</span>
+				<h1>Domina Azeroth con <br/><span class="text-gradient">Nuestras Guías</span></h1>
+				<p class="hero-subtitle">
+					Únete a la comunidad de habla hispana más grande. Encuentra las mejores guías de clase, rutas de farmeo y las últimas noticias del mundo de Warcraft.
+				</p>
+				<div class="hero-buttons">
+					<a href="/blog" class="button button-primary">Ver Últimas Noticias</a>
+					<a href="/blog" class="button button-gold">Guías de Clase</a>
+				</div>
+			</div>
+		</section>
+
+		<WoWTokenWidget />
+
+		<main>
+			<section class="latest-news">
+				<div class="section-header">
+					<h2>Últimas <span class="text-gradient-blue">Noticias</span></h2>
+					<a href="/blog" class="view-all">Ver todas →</a>
+				</div>
+				
+				<div class="news-grid">
+					{
+						posts.map((post) => (
+							<article class="card news-card">
+								<a href={`/blog/${post.id}/`}>
+									<div class="img-wrapper">
+										{post.data.heroImage && (
+											<Image width={720} height={360} src={post.data.heroImage} alt="" class="news-image" />
+										)}
+									</div>
+									<div class="news-content">
+										<p class="date">
+											<FormattedDate date={post.data.pubDate} />
+										</p>
+										<h4 class="title">{post.data.title}</h4>
+										<p class="description">{post.data.description}</p>
+									</div>
+								</a>
+							</article>
+						))
+					}
+				</div>
+			</section>
+
+			<section class="features-section">
+				<div class="section-header">
+					<h2>Recursos <span class="text-gradient">Esenciales</span></h2>
+				</div>
+				
+				<div class="features-grid">
+					<div class="card feature-card">
+						<div class="feature-icon bg-blue-glow">+</div>
+						<h3>Tier Lists de DPS</h3>
+						<p>Descubre qué clases están dominando el meta actual en Míticas+ y Bandas.</p>
+					</div>
+					<div class="card feature-card">
+						<div class="feature-icon bg-gold-glow">+</div>
+						<h3>Rutas de Farmeo</h3>
+						<p>Maximiza tu ganancia de oro por hora con nuestras rutas optimizadas paso a paso.</p>
+					</div>
+					<div class="card feature-card">
+						<div class="feature-icon bg-success-glow">+</div>
+						<h3>Addons Recomendados</h3>
+						<p>Las mejores interfaces y herramientas para mejorar tu experiencia de juego.</p>
+					</div>
+				</div>
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.hero-section {
+		padding: 6rem 1rem;
+		text-align: center;
+		border-bottom: 1px solid var(--color-border);
+		background: radial-gradient(circle at top, rgba(115, 115, 115, 0.08) 0%, transparent 60%);
+	}
+
+	.hero-content {
+		max-width: 800px;
+		margin: 0 auto;
+	}
+
+	.hero-content h1 {
+		margin: 1.5rem 0;
+	}
+
+	.hero-subtitle {
+		font-size: 1.25rem;
+		color: var(--color-text-muted);
+		margin-bottom: 2.5rem;
+	}
+
+	.hero-buttons {
+		display: flex;
+		gap: 1rem;
+		justify-content: center;
+	}
+
+	.section-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-end;
+		margin-bottom: 2rem;
+		border-bottom: 1px solid var(--color-border-light);
+		padding-bottom: 1rem;
+	}
+
+	.section-header h2 {
+		margin-bottom: 0;
+	}
+
+	.view-all {
+		font-size: 0.95rem;
+		font-weight: 600;
+	}
+
+	.latest-news {
+		margin-bottom: 5rem;
+	}
+
+	.news-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		gap: 2rem;
+	}
+
+	.news-card {
+		padding: 0;
+		overflow: hidden;
+	}
+
+	.news-card a {
+		text-decoration: none;
+		color: inherit;
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+	}
+
+	.news-card:hover {
+		transform: translateY(-5px);
+	}
+
+	.img-wrapper {
+		overflow: hidden;
+	}
+
+	.news-image {
+		width: 100%;
+		height: 200px;
+		object-fit: cover;
+		border-radius: var(--radius-md) var(--radius-md) 0 0;
+		border-bottom: 1px solid var(--color-border);
+		transition: transform 0.3s ease;
+	}
+
+	.news-card:hover .news-image {
+		transform: scale(1.05);
+	}
+
+	.news-content {
+		padding: 1.5rem;
+		flex-grow: 1;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.date {
+		font-size: 0.85rem;
+		color: var(--color-blue);
+		font-weight: 600;
+		margin-bottom: 0.5rem;
+	}
+
+	.title {
+		font-size: 1.25rem;
+		margin-bottom: 0.5rem;
+		transition: color 0.2s ease;
+	}
+
+	.news-card:hover .title {
+		color: var(--color-gold);
+	}
+
+	.description {
+		color: var(--color-text-muted);
+		font-size: 0.95rem;
+		margin-bottom: 0;
+		line-height: 1.5;
+	}
+
+	.features-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		gap: 2rem;
+	}
+
+	.feature-card {
+		text-align: center;
+		padding: 2.5rem 1.5rem;
+	}
+
+	.feature-icon {
+		font-size: 2.5rem;
+		width: 80px;
+		height: 80px;
+		margin: 0 auto 1.5rem auto;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		background: var(--color-bg-main);
+		border: 1px solid var(--color-border);
+	}
+
+	.bg-blue-glow { box-shadow: 0 0 20px rgba(115, 115, 115, 0.2); border-color: rgba(115, 115, 115, 0.4); }
+	.bg-gold-glow { box-shadow: 0 0 20px rgba(163, 163, 163, 0.2); border-color: rgba(163, 163, 163, 0.4); }
+	.bg-success-glow { box-shadow: 0 0 20px rgba(212, 212, 212, 0.2); border-color: rgba(212, 212, 212, 0.4); }
+
+	.feature-card h3 {
+		font-size: 1.25rem;
+		margin-bottom: 1rem;
+	}
+
+	.feature-card p {
+		color: var(--color-text-muted);
+		margin-bottom: 0;
+		font-size: 0.95rem;
+	}
+
+	@media (max-width: 768px) {
+		.hero-buttons {
+			flex-direction: column;
+		}
+		.hero-section {
+			padding: 4rem 1rem;
+		}
+	}
+</style>

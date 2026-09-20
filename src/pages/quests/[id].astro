@@ -1,0 +1,580 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { getQuestById } from '../../utils/quests';
+import { formatGold } from '../../utils/quest-types';
+
+const { id } = Astro.params;
+const quest = await getQuestById(Number(id));
+
+if (!quest) {
+    return Astro.redirect('/quests');
+}
+
+const qualityColors: Record<string, string> = {
+    Poor: '#9d9d9d',
+    Common: '#ffffff',
+    Uncommon: '#1eff00',
+    Rare: '#0070dd',
+    Epic: '#a335ee',
+    Legendary: '#ff8000',
+};
+
+function qualityColor(q: string): string {
+    return qualityColors[q] ?? '#fff';
+}
+
+// Convertir saltos de linea del dialogo en parrafos
+function formatDialog(text: string): string[] {
+    return text.split(/\n+/).filter(Boolean);
+}
+---
+
+<!doctype html>
+<html lang="es">
+    <head>
+        <BaseHead
+            title={`${quest.title} — Misiones WoW Forever`}
+            description={quest.description?.slice(0, 160) ?? `Mision #${quest.id} de WoW Forever.`}
+        />
+    </head>
+    <body>
+        <Header />
+
+        <main>
+            <!-- Breadcrumb -->
+            <nav class="breadcrumb" aria-label="Breadcrumb">
+                <a href="/quests">Misiones</a>
+                <span class="sep">›</span>
+                {quest.chain_name && (
+                    <>
+                        <span class="chain-crumb">{quest.chain_name}</span>
+                        <span class="sep">›</span>
+                    </>
+                )}
+                <span class="current">{quest.title}</span>
+            </nav>
+
+            <div class="layout">
+                <!-- Panel principal: dialogo de mision -->
+                <div class="quest-panel">
+                    <div class="quest-header">
+                        <div class="quest-icon-wrap">
+                            <span class="quest-icon">!</span>
+                        </div>
+                        <div>
+                            <h1 class="quest-title">{quest.title}</h1>
+                            <div class="quest-badges">
+                                {quest.category && <span class="badge badge-gold">{quest.category}</span>}
+                                {quest.quest_type && quest.quest_type !== 'Normal' && (
+                                    <span class="badge badge-blue">{quest.quest_type}</span>
+                                )}
+                                {quest.min_level && (
+                                    <span class="badge">Nivel {quest.min_level}+</span>
+                                )}
+                                {quest.class_req && (
+                                    <span class="badge badge-class">{quest.class_req}</span>
+                                )}
+                                {quest.race_req && (
+                                    <span class="badge badge-race">{quest.race_req}</span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cuerpo del dialogo -->
+                    {quest.description && (
+                        <div class="dialog-box">
+                            <div class="npc-nameplate">
+                                <div class="npc-portrait">
+                                    {(quest.giver_npc ?? 'N')[0].toUpperCase()}
+                                </div>
+                                <span class="npc-name">{quest.giver_npc ?? 'NPC'}</span>
+                            </div>
+                            <div class="dialog-text">
+                                {formatDialog(quest.description).map((para: string) => (
+                                    para.startsWith('<') && para.endsWith('>') ? (
+                                        <p class="emote">{para}</p>
+                                    ) : (
+                                        <p>{para}</p>
+                                    )
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <!-- Objetivos -->
+                    {quest.objectives && quest.objectives.length > 0 && (
+                        <div class="section">
+                            <h2 class="section-title">Objetivos de la Mision</h2>
+                            <ul class="objectives-list">
+                                {quest.objectives.map((obj: string) => (
+                                    <li>
+                                        <span class="obj-bullet"></span>
+                                        {obj}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    <!-- Dialogo de completado -->
+                    {quest.completion_text && (
+                        <div class="section">
+                            <h2 class="section-title">Al Completar</h2>
+                            <div class="dialog-box dialog-box--completion">
+                                <div class="npc-nameplate">
+                                    <div class="npc-portrait npc-portrait--turn">
+                                        {(quest.turn_in_npc ?? 'N')[0].toUpperCase()}
+                                    </div>
+                                    <span class="npc-name">{quest.turn_in_npc ?? 'NPC'}</span>
+                                </div>
+                                <div class="dialog-text">
+                                    {formatDialog(quest.completion_text).map((para: string) => (
+                                        <p>{para}</p>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <!-- Sidebar: info y recompensas -->
+                <aside class="sidebar">
+                    <!-- Info de la mision -->
+                    <div class="info-card">
+                        <h3 class="info-title">Informacion</h3>
+                        <dl class="info-list">
+                            <dt>ID</dt>
+                            <dd class="mono">#{quest.id}</dd>
+
+                            {quest.giver_npc && (
+                                <>
+                                    <dt>Otorgada por</dt>
+                                    <dd>{quest.giver_npc}</dd>
+                                </>
+                            )}
+                            {quest.turn_in_npc && (
+                                <>
+                                    <dt>Entregar a</dt>
+                                    <dd>{quest.turn_in_npc}</dd>
+                                </>
+                            )}
+                            {quest.zone && (
+                                <>
+                                    <dt>Zona</dt>
+                                    <dd class="zone-val">{quest.zone}</dd>
+                                </>
+                            )}
+                            {quest.area && (
+                                <>
+                                    <dt>Area</dt>
+                                    <dd>{quest.area}</dd>
+                                </>
+                            )}
+                            {quest.chain_name && (
+                                <>
+                                    <dt>Cadena</dt>
+                                    <dd class="chain-val">{quest.chain_name}</dd>
+                                </>
+                            )}
+                        </dl>
+                    </div>
+
+                    <!-- Recompensas -->
+                    <div class="rewards-card">
+                        <h3 class="info-title">Recompensas</h3>
+                        <div class="rewards-body">
+                            {quest.reward_xp && quest.reward_xp > 0 && (
+                                <div class="reward-row">
+                                    <span class="reward-label">Experiencia</span>
+                                    <span class="reward-xp">{quest.reward_xp.toLocaleString()} XP</span>
+                                </div>
+                            )}
+                            {quest.reward_gold && quest.reward_gold > 0 && (
+                                <div class="reward-row">
+                                    <span class="reward-label">Oro</span>
+                                    <span class="reward-gold">{formatGold(quest.reward_gold)}</span>
+                                </div>
+                            )}
+                            {quest.reward_items && quest.reward_items.length > 0 && (
+                                <div class="reward-items">
+                                    {quest.reward_items.map((item: any) => (
+                                        <div class="reward-item" id={`item-${item.name.replace(/\s+/g, '-').toLowerCase()}`}>
+                                            <div class="item-icon" style={`border-color: ${qualityColor(item.quality ?? 'Common')}`}>
+                                                {item.name[0]}
+                                            </div>
+                                            <div class="item-info">
+                                                <span class="item-name" style={`color: ${qualityColor(item.quality ?? 'Common')}`}>
+                                                    {item.name}
+                                                </span>
+                                                <div class="item-meta">
+                                                    {item.slot && <span>{item.slot}</span>}
+                                                    {item.binding === 'BoP' && <span>Se liga al recogerlo</span>}
+                                                    {item.binding === 'BoE' && <span>Se liga al equiparlo</span>}
+                                                </div>
+                                                {item.description && (
+                                                    <p class="item-flavor">"{item.description}"</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {(!quest.reward_xp || quest.reward_xp === 0) &&
+                             (!quest.reward_gold || quest.reward_gold === 0) &&
+                             (!quest.reward_items || quest.reward_items.length === 0) && (
+                                <p class="no-rewards">Sin recompensas registradas.</p>
+                            )}
+                        </div>
+                    </div>
+
+                    <!-- Navegacion de cadena -->
+                    <div class="nav-card">
+                        {quest.prev_quest_id && (
+                            <a href={`/quests/${quest.prev_quest_id}`} class="chain-nav chain-nav--prev">
+                                <span class="chain-nav-arrow">←</span>
+                                <span>Mision anterior</span>
+                            </a>
+                        )}
+                        {quest.next_quest_id && (
+                            <a href={`/quests/${quest.next_quest_id}`} class="chain-nav chain-nav--next">
+                                <span>Siguiente mision</span>
+                                <span class="chain-nav-arrow">→</span>
+                            </a>
+                        )}
+                        <a href="/quests" class="back-link">Ver todas las misiones</a>
+                    </div>
+                </aside>
+            </div>
+        </main>
+
+        <Footer />
+    </body>
+</html>
+
+<style>
+    /* Layout */
+    .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        color: var(--color-text-muted);
+        margin-bottom: 2rem;
+    }
+    .breadcrumb a { color: #c8a951; }
+    .breadcrumb a:hover { color: #fff; text-shadow: none; }
+    .sep { color: var(--color-border); }
+    .chain-crumb { color: var(--color-text-muted); }
+    .current { color: var(--color-text-main); }
+
+    .layout {
+        display: grid;
+        grid-template-columns: 1fr 320px;
+        gap: 2rem;
+        align-items: start;
+    }
+
+    @media (max-width: 900px) {
+        .layout {
+            grid-template-columns: 1fr;
+        }
+        .sidebar {
+            order: -1;
+        }
+    }
+
+    /* Quest Panel */
+    .quest-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    .quest-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 1.25rem;
+    }
+
+    .quest-icon-wrap {
+        flex-shrink: 0;
+    }
+
+    .quest-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #c8a951, #f0d060);
+        color: #1a1208;
+        font-weight: 900;
+        font-size: 1.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-heading);
+        box-shadow: 0 0 20px rgba(200, 169, 81, 0.4);
+    }
+
+    .quest-title {
+        font-size: clamp(1.5rem, 3vw, 2.25rem);
+        color: #f0e6c8;
+        margin: 0 0 0.75rem;
+    }
+
+    .quest-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .badge-class { background: rgba(196, 163, 90, 0.12); border-color: rgba(196, 163, 90, 0.4); color: #c4a35a; }
+    .badge-race  { background: rgba(167, 139, 219, 0.12); border-color: rgba(167, 139, 219, 0.4); color: #a78bdb; }
+
+    /* Dialog Box */
+    .dialog-box {
+        background: linear-gradient(145deg, #1c1608, #251e0a);
+        border: 1px solid #5a4a1a;
+        border-radius: var(--radius-md);
+        padding: 1.75rem;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(200,169,81,0.1);
+        position: relative;
+    }
+
+    .dialog-box::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #c8a951, transparent);
+    }
+
+    .npc-nameplate {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(200,169,81,0.2);
+    }
+
+    .npc-portrait {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #4a6a8a, #2a4a6a);
+        border: 2px solid #c8a951;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1rem;
+        color: #f0e6c8;
+        flex-shrink: 0;
+    }
+
+    .npc-portrait--turn {
+        background: linear-gradient(135deg, #5a3a8a, #3a1a6a);
+    }
+
+    .npc-name {
+        font-family: var(--font-heading);
+        font-weight: 700;
+        color: #f0d060;
+        font-size: 1rem;
+    }
+
+    .dialog-text p {
+        color: #d4c49a;
+        line-height: 1.7;
+        margin: 0 0 1rem;
+        font-size: 0.95rem;
+    }
+    .dialog-text p:last-child { margin: 0; }
+    .dialog-text .emote {
+        color: #9ab0c8;
+        font-style: italic;
+        font-size: 0.9rem;
+    }
+
+    /* Sections */
+    .section { display: flex; flex-direction: column; gap: 1rem; }
+    .section-title {
+        font-size: 1.15rem;
+        color: #c8a951;
+        border-bottom: 1px solid rgba(200,169,81,0.25);
+        padding-bottom: 0.5rem;
+        margin: 0;
+    }
+
+    .objectives-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    .objectives-list li {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--color-text-main);
+        font-size: 0.95rem;
+    }
+
+    .obj-bullet {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 2px solid #c8a951;
+        background: rgba(200,169,81,0.2);
+        flex-shrink: 0;
+    }
+
+    /* Sidebar */
+    .sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    .info-card, .rewards-card, .nav-card {
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: 1.25rem;
+    }
+
+    .info-title {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--color-text-muted);
+        margin: 0 0 1rem;
+        font-weight: 700;
+    }
+
+    .info-list {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.5rem 1rem;
+        margin: 0;
+    }
+
+    dt {
+        font-size: 0.8rem;
+        color: var(--color-text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+        align-self: start;
+        padding-top: 1px;
+    }
+
+    dd {
+        font-size: 0.9rem;
+        color: var(--color-text-main);
+        margin: 0;
+    }
+
+    .mono { font-family: monospace; color: var(--color-text-muted); }
+    .zone-val { color: #7ec8e3; }
+    .chain-val { color: #c8a951; }
+
+    /* Rewards */
+    .rewards-body { display: flex; flex-direction: column; gap: 0.75rem; }
+
+    .reward-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.9rem;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .reward-label { color: var(--color-text-muted); }
+    .reward-xp { color: #a8d8a8; font-weight: 700; }
+    .reward-gold { color: #f0d060; font-weight: 700; }
+
+    .reward-items { display: flex; flex-direction: column; gap: 0.75rem; }
+
+    .reward-item {
+        display: flex;
+        gap: 0.75rem;
+        align-items: flex-start;
+    }
+
+    .item-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-sm);
+        border: 2px solid;
+        background: rgba(255,255,255,0.05);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+        color: inherit;
+    }
+
+    .item-info { display: flex; flex-direction: column; gap: 0.2rem; }
+    .item-name { font-weight: 700; font-size: 0.9rem; }
+    .item-meta { font-size: 0.75rem; color: var(--color-text-muted); display: flex; flex-direction: column; gap: 0.1rem; }
+    .item-flavor {
+        font-size: 0.78rem;
+        color: #9ab0c8;
+        font-style: italic;
+        margin: 0.25rem 0 0;
+        line-height: 1.5;
+    }
+
+    .no-rewards { color: var(--color-text-muted); font-size: 0.875rem; margin: 0; }
+
+    /* Chain Nav */
+    .nav-card { display: flex; flex-direction: column; gap: 0.75rem; }
+
+    .chain-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 1rem;
+        background: rgba(200,169,81,0.07);
+        border: 1px solid rgba(200,169,81,0.25);
+        border-radius: var(--radius-sm);
+        color: #c8a951;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .chain-nav:hover {
+        background: rgba(200,169,81,0.15);
+        color: #f0d060;
+        text-shadow: none;
+    }
+
+    .chain-nav-arrow { font-size: 1rem; }
+
+    .back-link {
+        display: block;
+        text-align: center;
+        font-size: 0.82rem;
+        color: var(--color-text-muted);
+        padding-top: 0.25rem;
+        transition: color 0.2s;
+        text-decoration: none;
+    }
+
+    .back-link:hover { color: var(--color-text-main); text-shadow: none; }
+</style>

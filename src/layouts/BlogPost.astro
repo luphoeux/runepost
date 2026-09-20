@@ -1,0 +1,268 @@
+---
+import { Image } from 'astro:assets';
+import type { CollectionEntry } from 'astro:content';
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import FormattedDate from '../components/FormattedDate.astro';
+import Header from '../components/Header.astro';
+
+type Props = CollectionEntry<'blog'>['data'] & { headings?: any[] };
+
+const { title, description, pubDate, updatedDate, heroImage, category, tags, author, headings } = Astro.props;
+---
+
+<html lang="es">
+	<head>
+		<BaseHead title={title} description={description} />
+		<style>
+			main {
+				width: 100%;
+				margin: 0;
+                padding: 0;
+			}
+            
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 2rem 1rem;
+            }
+
+            .grid-layout {
+                display: grid;
+                grid-template-columns: repeat(12, minmax(0, 1fr));
+                gap: 2rem;
+            }
+
+            .content-col {
+                grid-column: span 12 / span 12;
+            }
+
+            .sidebar-col {
+                grid-column: span 12 / span 12;
+                display: flex;
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+
+            @media (min-width: 1024px) {
+                .content-col {
+                    grid-column: span 8 / span 8;
+                }
+                .sidebar-col {
+                    grid-column: span 4 / span 4;
+                }
+            }
+
+            @media (min-width: 1280px) {
+                .content-col {
+                    grid-column: span 9 / span 9;
+                }
+                .sidebar-col {
+                    grid-column: span 3 / span 3;
+                }
+            }
+
+            /* Article Header */
+            .article-header {
+                margin-bottom: 2rem;
+            }
+
+            .article-title {
+                font-size: clamp(2rem, 4vw, 3rem);
+                font-weight: 800;
+                line-height: 1.2;
+                margin: 1rem 0;
+                color: var(--color-text-heading);
+            }
+
+            .article-meta {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 1.5rem;
+                margin-bottom: 1.5rem;
+                color: var(--color-text-muted);
+                font-size: 0.9rem;
+                font-weight: 500;
+                border-bottom: 1px solid var(--color-border);
+                padding-bottom: 1rem;
+            }
+
+            .meta-item {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            
+            .meta-icon {
+                width: 16px;
+                height: 16px;
+                fill: currentColor;
+            }
+
+            .hero-img-container {
+                width: 100%;
+                border-radius: var(--radius-md);
+                overflow: hidden;
+                border: 1px solid var(--color-border);
+                box-shadow: var(--shadow-md);
+                margin-bottom: 2rem;
+            }
+
+            .hero-img {
+                width: 100%;
+                height: auto;
+                aspect-ratio: 16/9;
+                object-fit: cover;
+                display: block;
+            }
+
+			.prose {
+				color: var(--color-text-main);
+                font-size: 1.1rem;
+			}
+            
+            .tags-container {
+                display: flex;
+                gap: 0.5rem;
+                justify-content: flex-start;
+                margin-top: 3rem;
+                padding-top: 1.5rem;
+                border-top: 1px solid var(--color-border);
+            }
+
+            /* Sidebar Widgets */
+            .widget {
+                background-color: var(--color-bg-card);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-md);
+                padding: 1.5rem;
+                box-shadow: var(--shadow-sm);
+                position: sticky;
+                top: 100px;
+            }
+
+            .widget-title {
+                font-size: 1.1rem;
+                font-weight: 700;
+                margin-top: 0;
+                margin-bottom: 1rem;
+                padding-bottom: 0.75rem;
+                border-bottom: 1px solid var(--color-border-light);
+                color: var(--color-text-heading);
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .widget-icon {
+                width: 20px;
+                height: 20px;
+                color: var(--color-gold);
+            }
+
+            /* TOC List */
+            .toc-list {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+            .toc-list li {
+                margin-bottom: 0.75rem;
+            }
+            .toc-list li:last-child {
+                margin-bottom: 0;
+            }
+            .toc-list a {
+                color: var(--color-text-muted);
+                text-decoration: none;
+                font-size: 0.95rem;
+                transition: color 0.2s, transform 0.2s;
+                display: block;
+                line-height: 1.4;
+            }
+            .toc-list a:hover {
+                color: #fff;
+                transform: translateX(4px);
+            }
+            .toc-depth-3 {
+                padding-left: 1rem;
+                font-size: 0.9rem !important;
+                border-left: 2px solid var(--color-border-light);
+            }
+		</style>
+	</head>
+
+	<body>
+		<Header />
+		<main class="container">
+            <article class="grid-layout">
+                <!-- Columna Izquierda: Contenido -->
+                <div class="content-col">
+                    <header class="article-header">
+                        <span class="badge badge-gold">{category}</span>
+                        <h1 class="article-title">{title}</h1>
+                        
+                        <div class="article-meta">
+                            <div class="meta-item">
+                                <svg class="meta-icon" viewBox="0 0 448 512"><path d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512l388.6 0c16.4 0 29.7-13.3 29.7-29.7C448 383.8 368.2 304 269.7 304l-91.4 0z"/></svg>
+                                <span>{author}</span>
+                            </div>
+                            <div class="meta-item">
+                                <svg class="meta-icon" viewBox="0 0 448 512"><path d="M128 0c13.3 0 24 10.7 24 24l0 40 144 0 0-40c0-13.3 10.7-24 24-24s24 10.7 24 24l0 40 48 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 128C0 92.7 28.7 64 64 64l48 0 0-40c0-13.3 10.7-24 24-24zM400 176L48 176l0 272c0 8.8 7.2 16 16 16l320 0c8.8 0 16-7.2 16-16l0-272z"/></svg>
+                                <FormattedDate date={pubDate} />
+                            </div>
+                            {updatedDate && (
+                                <div class="meta-item" style="margin-left: auto; font-style: italic; font-size: 0.8rem;">
+                                    (Actualizado: <FormattedDate date={updatedDate} />)
+                                </div>
+                            )}
+                        </div>
+
+                        {heroImage && (
+                            <div class="hero-img-container">
+                                <Image width={1200} height={675} src={heroImage} alt="" class="hero-img" />
+                            </div>
+                        )}
+                    </header>
+                    
+                    <div class="prose">
+                        <slot />
+                    </div>
+
+                    {tags && tags.length > 0 && (
+                        <div class="tags-container">
+                            {tags.map((tag: string) => (
+                                <span class="badge badge-blue">#{tag}</span>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <!-- Columna Derecha: Barra Lateral (Widgets) -->
+                <aside class="sidebar-col">
+                    <div class="widget toc-widget">
+                        <h3 class="widget-title">
+                            <svg class="widget-icon" fill="currentColor" viewBox="0 0 20 18"><path d="M18 0H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2Zm-5.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm4.376 10.481A1 1 0 0 1 16 15H4a1 1 0 0 1-.895-1.447l3.5-7A1 1 0 0 1 7.468 6a.965.965 0 0 1 .9.5l2.775 4.757 1.546-1.887a1 1 0 0 1 1.618.1l2.541 4a1 1 0 0 1 .028 1.011Z"></path></svg>
+                            Contenido
+                        </h3>
+                        {headings && headings.length > 0 ? (
+                            <ul class="toc-list">
+                                {headings.map((heading) => (
+                                    <li>
+                                        <a href={`#${heading.slug}`} class={`toc-depth-${heading.depth}`}>
+                                            {heading.text}
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p style="font-size: 0.9rem; color: var(--color-text-muted);">Sin índice para mostrar.</p>
+                        )}
+                    </div>
+                </aside>
+            </article>
+		</main>
+		<Footer />
+	</body>
+</html>
