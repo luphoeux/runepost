@@ -33,6 +33,7 @@ export interface Quest {
     area?: string;
     giver_npc?: string;
     turn_in_npc?: string;
+    time_estimate?: string;
 
     // Recompensas
     reward_xp?: number;

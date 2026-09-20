@@ -1,4 +1,6 @@
 ---
+export const prerender = false;
+
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
@@ -8,6 +10,13 @@ import type { Quest } from '../../utils/quest-types';
 
 const quests = await listQuests();
 
+// Agrupar misiones por cadena (Notion style)
+const questsByChain = quests.reduce((acc: Record<string, any[]>, quest: any) => {
+    const chain = quest.chain_name || 'Otras Misiones';
+    if (!acc[chain]) acc[chain] = [];
+    acc[chain].push(quest);
+    return acc;
+}, {});
 const qualityColors: Record<string, string> = {
     Poor: '#9d9d9d',
     Common: '#ffffff',
@@ -72,52 +81,71 @@ const categoryIcons: Record<string, string> = {
                     <p>No hay misiones registradas aun.</p>
                 </div>
             ) : (
-                <div class="quest-grid">
-                    {quests.map((quest: Quest) => (
-                        <a href={`/quests/${quest.id}`} class="quest-card" id={`quest-${quest.id}`}>
-                            <div class="quest-card-top">
-                                <span class="quest-icon" title={quest.category ?? 'Normal'}>
-                                    {categoryIcons[quest.category ?? ''] ?? '!'}
-                                </span>
-                                <div class="quest-meta">
-                                    {quest.chain_name && (
-                                        <span class="chain-label">{quest.chain_name}</span>
-                                    )}
-                                    <span class="quest-id">#{quest.id}</span>
-                                </div>
+                <div class="notion-tables">
+                    {Object.entries(questsByChain).map(([chainName, chainQuests]) => (
+                        <div class="chain-section">
+                            <h2 class="chain-title">{chainName}</h2>
+                            <div class="table-responsive">
+                                <table class="notion-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="col-num"># Number</th>
+                                            <th class="col-name">★ Mission Name</th>
+                                            <th>📋 Objective</th>
+                                            <th>📑 Category</th>
+                                            <th>⏱ Time</th>
+                                            <th class="col-desc">📝 Description</th>
+                                            <th>👤 NPC Quest</th>
+                                            <th class="text-right">+ XP Reward</th>
+                                            <th class="text-right">💰 Gold Reward</th>
+                                            <th class="text-center">📦 Item Reward</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {chainQuests.map((quest: Quest) => (
+                                            <tr class="notion-row">
+                                                <td class="col-num mono">{quest.id}</td>
+                                                <td class="col-name fw-600">
+                                                    <a href={`/quests/${quest.id}`}>{quest.title}</a>
+                                                </td>
+                                                <td class="truncate" title={quest.objectives?.[0]}>
+                                                    {quest.objectives?.[0] || '-'}
+                                                </td>
+                                                <td>
+                                                    <span class="n-badge n-badge-gray">
+                                                        {quest.category || quest.quest_type || 'Story Quest'}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    {quest.time_estimate ? (
+                                                        <span class="n-badge n-badge-blue">{quest.time_estimate}</span>
+                                                    ) : '-'}
+                                                </td>
+                                                <td class="truncate col-desc" title={quest.description?.replace(/<[^>]+>/g, '')}>
+                                                    {quest.description ? quest.description.replace(/<[^>]+>/g, '').slice(0, 45) + '...' : '-'}
+                                                </td>
+                                                <td>
+                                                    <span class="npc-badge">{quest.giver_npc || '-'}</span>
+                                                </td>
+                                                <td class="text-right mono">
+                                                    {quest.reward_xp ? quest.reward_xp.toLocaleString() : '-'}
+                                                </td>
+                                                <td class="text-right mono">
+                                                    {quest.reward_gold ? formatGold(quest.reward_gold) : '-'}
+                                                </td>
+                                                <td class="text-center">
+                                                    {quest.reward_items && quest.reward_items.length > 0 ? (
+                                                        <span class="n-badge n-badge-green n-badge-sm">Yes</span>
+                                                    ) : (
+                                                        <span class="n-badge n-badge-red n-badge-sm">No</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
-
-                            <h2 class="quest-title">{quest.title}</h2>
-
-                            {quest.description && (
-                                <p class="quest-excerpt">
-                                    {quest.description.replace(/<[^>]+>/g, '').slice(0, 120)}…
-                                </p>
-                            )}
-
-                            <div class="quest-footer">
-                                <div class="quest-tags">
-                                    {quest.zone && <span class="tag tag-zone">{quest.zone}</span>}
-                                    {quest.class_req && <span class="tag tag-class">{quest.class_req}</span>}
-                                    {quest.race_req && <span class="tag tag-race">{quest.race_req}</span>}
-                                    {quest.min_level && <span class="tag">Nv. {quest.min_level}</span>}
-                                </div>
-                                <div class="quest-rewards-preview">
-                                    {quest.reward_xp ? (
-                                        <span class="xp-badge">{quest.reward_xp.toLocaleString()} XP</span>
-                                    ) : null}
-                                    {quest.reward_items && quest.reward_items.length > 0 && (
-                                        <span
-                                            class="item-dot"
-                                            style={`color: ${qualityColor(quest.reward_items[0].quality ?? 'Common')}`}
-                                            title={quest.reward_items[0].name}
-                                        >
-                                            +{quest.reward_items.length} objeto{quest.reward_items.length > 1 ? 's' : ''}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        </a>
+                        </div>
                     ))}
                 </div>
             )}
@@ -182,169 +210,113 @@ const categoryIcons: Record<string, string> = {
         margin-top: 0.25rem;
     }
 
-    /* Quest Grid */
-    .quest-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 1.25rem;
-    }
-
-    .quest-card {
-        background: var(--color-bg-card);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        padding: 1.5rem;
+    /* Notion-style Tables */
+    .notion-tables {
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
-        text-decoration: none;
-        color: inherit;
-        transition: all 0.25s ease;
-        position: relative;
-        overflow: hidden;
+        gap: 3rem;
     }
 
-    .quest-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 2px;
-        background: linear-gradient(90deg, #c8a951, #f0d060);
-        opacity: 0;
-        transition: opacity 0.25s ease;
+    .chain-title {
+        font-size: 1.5rem;
+        color: #f0e6c8;
+        margin: 0 0 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--color-border);
     }
 
-    .quest-card:hover {
-        border-color: #c8a951;
-        transform: translateY(-3px);
-        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(200, 169, 81, 0.12);
-        color: inherit;
-        text-shadow: none;
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-bg-card);
     }
 
-    .quest-card:hover::before {
-        opacity: 1;
-    }
-
-    .quest-card-top {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .quest-icon {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #c8a951, #f0d060);
-        color: #1a1208;
-        font-weight: 900;
+    .notion-table {
+        width: 100%;
+        border-collapse: collapse;
         font-size: 0.85rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        font-family: var(--font-heading);
-    }
-
-    .quest-meta {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .chain-label {
-        font-size: 0.7rem;
-        color: #c8a951;
-        background: rgba(200, 169, 81, 0.1);
-        border: 1px solid rgba(200, 169, 81, 0.3);
-        border-radius: var(--radius-full);
-        padding: 0.15rem 0.6rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
         white-space: nowrap;
+    }
+
+    .notion-table th {
+        text-align: left;
+        padding: 0.75rem 1rem;
+        color: var(--color-text-muted);
+        font-weight: 500;
+        border-bottom: 1px solid var(--color-border);
+        background: rgba(0,0,0,0.2);
+    }
+
+    .notion-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid rgba(255,255,255,0.03);
+        color: var(--color-text-main);
+    }
+
+    .notion-row:hover td {
+        background: rgba(255,255,255,0.03);
+    }
+
+    .notion-row:last-child td {
+        border-bottom: none;
+    }
+
+    /* Col específicas */
+    .col-num { width: 60px; color: var(--color-text-muted); }
+    .col-name { min-width: 220px; }
+    .col-desc { max-width: 250px; }
+
+    .notion-table a {
+        color: #f0e6c8;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    .notion-table a:hover {
+        color: #c8a951;
+    }
+
+    .truncate {
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 180px;
-    }
-
-    .quest-id {
-        font-size: 0.75rem;
-        color: var(--color-text-muted);
-        font-family: monospace;
-    }
-
-    .quest-title {
-        font-size: 1.1rem;
-        font-weight: 700;
-        margin: 0;
-        color: #f0e6c8;
-        line-height: 1.3;
-    }
-
-    .quest-excerpt {
-        font-size: 0.875rem;
-        color: var(--color-text-muted);
-        line-height: 1.55;
-        margin: 0;
-        flex: 1;
-    }
-
-    .quest-footer {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-        margin-top: auto;
-        padding-top: 0.75rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .quest-tags {
-        display: flex;
-        gap: 0.4rem;
-        flex-wrap: wrap;
-    }
-
-    .tag {
-        font-size: 0.7rem;
-        padding: 0.2rem 0.55rem;
-        border-radius: var(--radius-full);
-        background: rgba(255, 255, 255, 0.07);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        color: var(--color-text-muted);
-        font-weight: 600;
         white-space: nowrap;
+        max-width: 200px;
     }
 
-    .tag-zone { color: #7ec8e3; border-color: rgba(126, 200, 227, 0.3); background: rgba(126, 200, 227, 0.08); }
-    .tag-class { color: #c4a35a; border-color: rgba(196, 163, 90, 0.3); background: rgba(196, 163, 90, 0.08); }
-    .tag-race { color: #a78bdb; border-color: rgba(167, 139, 219, 0.3); background: rgba(167, 139, 219, 0.08); }
+    .mono { font-family: monospace; font-size: 0.9rem; }
+    .fw-600 { font-weight: 600; }
+    .text-right { text-align: right !important; }
+    .text-center { text-align: center !important; }
 
-    .quest-rewards-preview {
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
-        flex-shrink: 0;
+    /* Notion Badges */
+    .n-badge {
+        display: inline-block;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        line-height: 1.2;
     }
 
-    .xp-badge {
-        font-size: 0.72rem;
-        font-weight: 700;
-        color: #a8d8a8;
-        background: rgba(168, 216, 168, 0.1);
-        border: 1px solid rgba(168, 216, 168, 0.25);
-        padding: 0.2rem 0.55rem;
-        border-radius: var(--radius-full);
+    .n-badge-sm {
+        padding: 0.15rem 0.4rem;
+        border-radius: 3px;
+        font-weight: 600;
     }
 
-    .item-dot {
-        font-size: 0.72rem;
-        font-weight: 700;
+    .n-badge-gray { background: rgba(155, 155, 155, 0.15); color: #c9c2b0; }
+    .n-badge-blue { background: rgba(59, 130, 246, 0.15); color: #93c5fd; }
+    .n-badge-green { background: rgba(34, 197, 94, 0.15); color: #86efac; }
+    .n-badge-red { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+
+    .npc-badge {
+        padding: 0.2rem 0.4rem;
+        background: rgba(200, 169, 81, 0.1);
+        border: 1px solid rgba(200, 169, 81, 0.2);
+        border-radius: 4px;
+        color: #c8a951;
+        font-size: 0.75rem;
     }
 
     /* Empty State */

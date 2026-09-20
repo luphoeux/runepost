@@ -1,0 +1,106 @@
+---
+import { getSupabaseSSR } from '../utils/supabaseServer.ts';
+import BaseHead from '../components/BaseHead.astro';
+
+interface Props {
+    title: string;
+}
+
+const { title } = Astro.props;
+
+// Verificar sesión
+const supabase = getSupabaseSSR(Astro.cookies);
+const { data: { session } } = await supabase.auth.getSession();
+
+// No podemos hacer redirect aquí porque es un Layout. El redirect se hace en cada página.
+
+// Si hay sesión, podríamos verificar que sea el correo del administrador
+const userEmail = session?.user?.email;
+// Opcional: if (userEmail !== 'tu-correo@gmail.com') return Astro.redirect('/');
+---
+
+<!doctype html>
+<html lang="es">
+    <head>
+        <BaseHead title={`${title} - Admin WoW Forever`} description="Panel de administración" />
+        <style>
+            :root {
+                --admin-bg: #0f1115;
+                --admin-card: #161b22;
+                --admin-border: #30363d;
+                --admin-text: #c9d1d9;
+                --admin-accent: #58a6ff;
+            }
+            body {
+                background-color: var(--admin-bg);
+                color: var(--admin-text);
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+            }
+            .admin-header {
+                background: var(--admin-card);
+                border-bottom: 1px solid var(--admin-border);
+                padding: 1rem 2rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .admin-nav {
+                display: flex;
+                gap: 1rem;
+            }
+            .admin-nav a {
+                color: var(--admin-text);
+                text-decoration: none;
+                font-weight: 500;
+            }
+            .admin-nav a:hover {
+                color: var(--admin-accent);
+            }
+            .admin-content {
+                padding: 2rem;
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+            .user-info {
+                font-size: 0.85rem;
+                color: #8b949e;
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+            }
+            .logout-btn {
+                background: transparent;
+                border: 1px solid var(--admin-border);
+                color: var(--admin-text);
+                padding: 0.25rem 0.5rem;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+            .logout-btn:hover {
+                background: #21262d;
+            }
+        </style>
+    </head>
+    <body>
+        {session && (
+            <header class="admin-header">
+                <div class="admin-nav">
+                    <a href="/admin/quests" style="font-weight: bold; color: white;">WoW Admin</a>
+                    <a href="/admin/quests">Misiones</a>
+                    <a href="/" target="_blank" style="color: #8b949e;">Ver Sitio Público ↗</a>
+                </div>
+                <div class="user-info">
+                    <span>{userEmail}</span>
+                    <form method="post" action="/api/auth/logout">
+                        <button class="logout-btn" type="submit">Salir</button>
+                    </form>
+                </div>
+            </header>
+        )}
+        <main class="admin-content">
+            <slot />
+        </main>
+    </body>
+</html>

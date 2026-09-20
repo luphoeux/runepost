@@ -21,6 +21,15 @@ export async function getQuestById(id: number): Promise<Quest | null> {
     return data as Quest;
 }
 
+/** Actualiza campos especificos de una mision en Supabase */
+export async function updateQuest(id: number, updates: Partial<Quest>): Promise<{ error: Error | null }> {
+    const { error } = await getSupabaseClient()
+        .from('quests')
+        .update(updates)
+        .eq('id', id);
+    return { error };
+}
+
 /**
  * Reconstruye la cadena completa a partir de cualquier mision de la cadena.
  * Navega hacia atras (prev_quest_id) hasta el inicio y luego hacia adelante.

@@ -1,0 +1,9 @@
+## Interface: 11503
+## Title: QuestScraper - WoW Forever DB
+## Notes: Captura automaticamente datos de misiones para importar a Supabase.
+## Author: WoW Forever Site
+## Version: 1.0.0
+## SavedVariables: QuestScraperDB
+## DefaultState: enabled
+
+QuestScraper.lua

@@ -11,12 +11,15 @@
     "preview": "astro preview",
     "astro": "astro",
     "wow:sync": "node scripts/wow-sync.ts",
-    "quest:insert": "node scripts/quest-insert.ts"
+    "quest:insert": "node scripts/quest-insert.ts",
+    "quest:sync-addon": "node scripts/quest-from-addon.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^7.0.6",
+    "@astrojs/node": "^11.1.6",
     "@astrojs/rss": "^4.0.19",
     "@astrojs/sitemap": "^3.7.3",
+    "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.116.0",
     "astro": "^7.2.3",
     "sharp": "^0.35.0"
