@@ -25,3 +25,5 @@ Consult these guides before working on related tasks:
 
 - Nunca usar emojis en las respuestas ni en el código.
 - Mantén un tono estrictamente profesional, directo y conciso. Evita respuestas coloquiales, saludos informales ("jajaja", etc.) y justificaciones excesivas. Limítate a responder lo necesario y ejecutar las tareas.
+- Toda tabla nueva o estructura de base de datos debe ser igual a la que provee la API de Blizzard para evitar tablas raras o personalizadas.
+- No hagas ninguna tarea hardcodeada.
