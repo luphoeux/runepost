@@ -15,8 +15,8 @@ const regions: RegionInfo[] = [
 
 const tokenPrices = await Promise.all(
     regions.map(async ({ code, label }) => {
-        const priceCopper = await getWoWTokenPrice(code);
-        const priceGold = priceCopper ? Math.floor(priceCopper / 10000) : null;
+        const tokenData = await getWoWTokenPrice(code);
+        const priceGold = tokenData ? Math.floor(tokenData.price / 10000) : null;
         return {
             code,
             label,

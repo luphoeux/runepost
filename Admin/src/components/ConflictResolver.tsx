@@ -38,10 +38,10 @@ export default function ConflictResolver({ conflicts, onComplete, onCancel }: Co
         const toastId = toast.loading('Generando imagen de mision...');
         try {
             const url = await uploadQuestImage(imported);
-            if (url) imported.image_url = url;
+            const questToSave = url ? { ...imported, image_url: url } : imported;
             
             toast.loading('Reemplazando en base de datos...', { id: toastId });
-            const { error } = await supabase.from('quests').upsert(imported, { onConflict: 'id' });
+            const { error } = await supabase.from('quests').upsert(questToSave, { onConflict: 'id' });
             if (error) throw new Error(error.message);
             
             toast.success(`Quest #${imported.id} updated.`, { id: toastId });

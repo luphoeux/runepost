@@ -1,0 +1,15 @@
+{
+  "name": "sitio-wow",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "npm --prefix Sitio run dev",
+    "dev:admin": "npm --prefix Admin run dev",
+    "prebuild": "node -e \"import fs from 'node:fs'; import { execSync } from 'node:child_process'; if (process.env.VERCEL || !fs.existsSync('Sitio/node_modules/astro')) execSync('npm --prefix Sitio install', { stdio: 'inherit' }); if (process.env.VERCEL || !fs.existsSync('Admin/node_modules/vite')) execSync('npm --prefix Admin install', { stdio: 'inherit' });\"",
+    "build": "npm --prefix Sitio run build && npm --prefix Admin run build && node -e \"import fs from 'node:fs'; if (fs.existsSync('Admin/dist')) { if (fs.existsSync('Sitio/.vercel/output/static')) { fs.cpSync('Admin/dist', 'Sitio/.vercel/output/static/admin', { recursive: true }); fs.cpSync('Sitio/.vercel', '.vercel', { recursive: true }); } else if (fs.existsSync('Sitio/dist/client')) { fs.cpSync('Admin/dist', 'Sitio/dist/client/admin', { recursive: true }); } }\"",
+    "build:sitio": "npm --prefix Sitio run build",
+    "build:admin": "npm --prefix Admin run build",
+    "check": "npm --prefix Sitio run check && npm --prefix Admin run lint"
+  }
+}

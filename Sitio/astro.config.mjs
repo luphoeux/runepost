@@ -5,6 +5,7 @@ import sitemap from '@astrojs/sitemap';
 import { defineConfig, fontProviders } from 'astro/config';
 
 import node from '@astrojs/node';
+import vercel from '@astrojs/vercel';
 
 import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
@@ -40,9 +41,11 @@ export default defineConfig({
     ],
 
   output: 'server',
-  adapter: node({
-    mode: 'standalone',
-  }),
+  adapter: process.env.VERCEL
+    ? vercel()
+    : node({
+        mode: 'standalone',
+      }),
 
   vite: {
     plugins: [tailwindcss()],

@@ -109,7 +109,6 @@ local function CaptureCurrentQuest()
     -- Titulo y textos principales
     local title       = trim(GetTitleText())
     local description = trim(GetQuestText())
-    local progress    = trim(GetProgressText())   -- texto cuando la mision esta en progreso
     local completion  = trim(GetRewardText())      -- texto al completar
 
     if not title or title == "" then return end
@@ -150,7 +149,7 @@ local function CaptureCurrentQuest()
             local link = GetQuestItemLink and GetQuestItemLink("choice", i)
             if link then
                 itemID = tonumber(string.match(link, "item:(%d+)"))
-                if itemID then 
+                if itemID then
                     if RecordItemID(itemID) then addedItems = addedItems + 1 end
                 end
             end
@@ -172,7 +171,7 @@ local function CaptureCurrentQuest()
             local link = GetQuestItemLink and GetQuestItemLink("reward", i)
             if link then
                 itemID = tonumber(string.match(link, "item:(%d+)"))
-                if itemID then 
+                if itemID then
                     if RecordItemID(itemID) then addedItems = addedItems + 1 end
                 end
             end
@@ -745,14 +744,12 @@ end
 -- -----------------------------------------------------------------------
 -- Captura de Sistemas Avanzados (Fase 5)
 -- -----------------------------------------------------------------------
-local lastKilledNPC = nil
-
 local function ScanTaxis()
     local numNodes = NumTaxiNodes()
     if numNodes == 0 then return end
     
     local mapID, posX, posY = GetPlayerCoordinates()
-    local zone, area = getCurrentZone()
+    local zone = getCurrentZone()
     local added = 0
     
     for i = 1, numNodes do
@@ -789,7 +786,7 @@ local function ScanAchievements()
     for _, categoryID in ipairs(categoryList) do
         local numAchievements = GetCategoryNumAchievements(categoryID)
         for i = 1, numAchievements do
-            local id, name, points, completed, month, day, year, description, flags, icon, rewardText, isGuild, wasEarnedByMe, earnedBy = GetAchievementInfo(categoryID, i)
+            local id, name, points, _, _, _, _, description, _, icon, rewardText, isGuild = GetAchievementInfo(categoryID, i)
             if id then
                 local key = tostring(id)
                 if not QuestScraperDB.achievements[key] then
@@ -879,14 +876,14 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3)
         C_Timer.After(0.5, ScanTradeSkills)
         
     elseif event == "GOSSIP_SHOW" then
-        C_Timer.After(0.1, function() 
-            CaptureNPC("target") 
+        C_Timer.After(0.1, function()
+            CaptureNPC("target")
             CaptureGossip()
         end)
 
     elseif event == "PLAYER_TARGET_CHANGED" then
-        C_Timer.After(0.05, function() 
-            CaptureNPC("target") 
+        C_Timer.After(0.05, function()
+            CaptureNPC("target")
             ScanAuras("target")
         end)
 
@@ -1121,7 +1118,7 @@ else
                         local info = C_QuestLog.GetInfo(questIndex)
                         questID = info and info.questID
                     elseif _G.GetQuestLogTitle then
-                        local t1, t2, t3, t4, t5, t6, t7, t8, t9 = _G.GetQuestLogTitle(questIndex)
+                        local _, _, _, _, _, _, _, t8, t9 = _G.GetQuestLogTitle(questIndex)
                         questID = type(t9) == "number" and t9 or (type(t8) == "number" and t8)
                     end
                 end

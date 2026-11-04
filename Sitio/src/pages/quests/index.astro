@@ -17,25 +17,6 @@ const questsByChain = quests.reduce((acc: Record<string, any[]>, quest: any) => 
     acc[chain].push(quest);
     return acc;
 }, {});
-const qualityColors: Record<string, string> = {
-    Poor: '#9d9d9d',
-    Common: '#ffffff',
-    Uncommon: '#1eff00',
-    Rare: '#0070dd',
-    Epic: '#a335ee',
-    Legendary: '#ff8000',
-};
-
-function qualityColor(q: string): string {
-    return qualityColors[q] ?? '#fff';
-}
-
-const categoryIcons: Record<string, string> = {
-    Principal: '!',
-    Secundaria: '?',
-    Clase: 'C',
-    Diario: 'D',
-};
 ---
 
 <!doctype html>

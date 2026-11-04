@@ -5,7 +5,8 @@
     "**/*"
   ],
   "exclude": [
-    "dist"
+    "dist",
+    "scripts/obs_overlay"
   ],
   "compilerOptions": {
     "strictNullChecks": true,
