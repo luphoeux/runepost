@@ -1,0 +1,7 @@
+## Interface: 110002, 110005, 11509, 16001, 20506, 38002, 50504, 120001, 120105
+## Title: OBS Quest Sync
+## Notes: Exporta la misión activa para el overlay de OBS
+## Author: Antigravity
+## Version: 1.0
+
+OBSQuestSync.lua

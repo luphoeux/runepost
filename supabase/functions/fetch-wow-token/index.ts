@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
         // 2. Consultar Token de NA y EU
         for (const region of ['us', 'eu']) {
             const dbRegion = region === 'us' ? 'NA' : 'EU';
-            const namespace = `dynamic-classic-${region}`;
+            const namespace = `dynamic-${region}`;
             const res = await fetch(`https://${region}.api.blizzard.com/data/wow/token/index?namespace=${namespace}&locale=en_US`, {
                 headers: { 'Authorization': `Bearer ${accessToken}` }
             });

@@ -6,7 +6,7 @@ interface Props {
     locale?: string;
 }
 
-const { id, locale = 'es_MX' } = Astro.props;
+const { id, locale = 'en_US' } = Astro.props;
 
 // Consultar la API o el caché persistente (durante el build estático)
 const itemData = await getWoWItem(Number(id), locale);

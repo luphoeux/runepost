@@ -1,4 +1,4 @@
-## Interface: 11503
+## Interface: 110002, 110005, 11509, 16001, 20506, 38002, 50504, 120001, 120105
 ## Title: QuestScraper - WoW Forever DB
 ## Notes: Captura automaticamente datos de misiones para importar a Supabase.
 ## Author: WoW Forever Site

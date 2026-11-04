@@ -32,6 +32,7 @@ function parseLuaString(content: string) {
     const quests: Record<string, any> = {};
     const inventoryItems: Record<string, any> = {};
     const seenItems: number[] = [];
+    const seenItemsTimestamps: Record<number, string> = {};
 
     // 1. Parse quests
     const questsBlock = extractLuaBlock(content, 'quests');
@@ -64,19 +65,22 @@ function parseLuaString(content: string) {
                         .map(m => m[1]);
                 }
 
-                const itemsMatch = block.match(/\["reward_items"\]\s*=\s*\{([\s\S]*?)\n\s*\}/);
-                if (itemsMatch) {
-                    const itemsBlock = itemsMatch[1];
+                const itemsBlock = extractLuaBlock(block, 'reward_items');
+                if (itemsBlock) {
                     const itemEntries = [...itemsBlock.matchAll(/\{\s*([^}]+)\s*\}/g)];
                     entry.reward_items = itemEntries.map(ie => {
                         const ib = ie[1];
                         const item: any = {};
-                        const nameM = ib.match(/\["name"\]\s*=\s*"([^"]*)"/);
-                        const qtyM  = ib.match(/\["quantity"\]\s*=\s*(\d+)/);
-                        const qualM = ib.match(/\["quality"\]\s*=\s*(\d+)/);
+                        const nameM  = ib.match(/\["name"\]\s*=\s*"([^"]*)"/);
+                        const qtyM   = ib.match(/\["quantity"\]\s*=\s*(\d+)/);
+                        const qualM  = ib.match(/\["quality"\]\s*=\s*(\d+)/);
+                        const idM    = ib.match(/\["item_id"\]\s*=\s*(\d+)/);
+                        const choiceM = ib.match(/\["choice"\]\s*=\s*(true|false)/);
                         
                         if (nameM) item.name = nameM[1];
                         if (qtyM)  item.quantity = parseInt(qtyM[1], 10);
+                        if (idM)   item.item_id = parseInt(idM[1], 10);
+                        if (choiceM) item.choice = choiceM[1] === 'true';
                         if (qualM) {
                             const qualMap: Record<number, string> = { 0: 'Poor', 1: 'Common', 2: 'Uncommon', 3: 'Rare', 4: 'Epic', 5: 'Legendary' };
                             item.quality = qualMap[parseInt(qualM[1], 10)] ?? 'Common';
@@ -86,6 +90,7 @@ function parseLuaString(content: string) {
                 }
 
                 if (entry.title) {
+                    entry.title_en = entry.title;
                     quests[key] = entry;
                 }
             }
@@ -103,12 +108,16 @@ function parseLuaString(content: string) {
             if (block) {
                 const entry: any = {};
                 
-                const nameM = block.match(/\["name"\]\s*=\s*"([^"]*)"/);
-                const qtyM  = block.match(/\["quantity"\]\s*=\s*(\d+)/);
-                const qualM = block.match(/\["quality"\]\s*=\s*(\d+)/);
+                const nameM  = block.match(/(?:\["name"\]|name)\s*=\s*"([^"]*)"/);
+                const qtyM   = block.match(/(?:\["quantity"\]|quantity)\s*=\s*(\d+)/);
+                const qualM  = block.match(/(?:\["quality"\]|quality)\s*=\s*(\d+)/);
+                const idM    = block.match(/(?:\["item_id"\]|item_id)\s*=\s*(\d+)/);
+                const capM   = block.match(/(?:\["captured_at"\]|captured_at)\s*=\s*"([^"]*)"/);
                 
                 if (nameM) entry.name = nameM[1];
                 if (qtyM)  entry.quantity = parseInt(qtyM[1], 10);
+                if (idM)   entry.item_id = parseInt(idM[1], 10);
+                if (capM)  entry.captured_at = capM[1];
                 if (qualM) {
                     const qualMap: Record<number, string> = { 0: 'Poor', 1: 'Common', 2: 'Uncommon', 3: 'Rare', 4: 'Epic', 5: 'Legendary' };
                     entry.quality = qualMap[parseInt(qualM[1], 10)] ?? 'Common';
@@ -124,14 +133,101 @@ function parseLuaString(content: string) {
     // 3. Parse seen_items
     const seenBlock = extractLuaBlock(content, 'seen_items');
     if (seenBlock) {
-        const idRegex = /\[(\d+)\]\s*=\s*true/g;
+        const idRegex = /\[(\d+)\]\s*=\s*(?:true|"([^"]*)")/g;
         let match;
         while ((match = idRegex.exec(seenBlock)) !== null) {
-            seenItems.push(parseInt(match[1], 10));
+            const id = parseInt(match[1], 10);
+            seenItems.push(id);
+            if (match[2]) {
+                seenItemsTimestamps[id] = match[2];
+            }
         }
     }
 
-    return { quests, inventoryItems, seenItems };
+    // 4. Parse NPCs
+    const npcs: any[] = [];
+    const npcBlock = extractLuaBlock(content, 'npcs');
+    if (npcBlock) {
+        const keyRegex = /\["([^"]+)"\]\s*=\s*\{/g;
+        let match;
+        while ((match = keyRegex.exec(npcBlock)) !== null) {
+            const key = match[1];
+            const block = extractLuaBlock(npcBlock.substring(match.index), key);
+            if (block) {
+                const entry: any = {};
+                
+                const idM     = block.match(/(?:\["npc_id"\]|npc_id)\s*=\s*(\d+)/);
+                const nameM   = block.match(/(?:\["name"\]|name)\s*=\s*"([^"]*)"/);
+                const titleM  = block.match(/(?:\["title"\]|title)\s*=\s*"([^"]*)"/);
+                const lvlM    = block.match(/(?:\["level"\]|level)\s*=\s*(\d+)/);
+                const classM  = block.match(/(?:\["classification"\]|classification)\s*=\s*"([^"]*)"/);
+                const typeM   = block.match(/(?:\["creature_type"\]|creature_type)\s*=\s*"([^"]*)"/);
+                const reactM  = block.match(/(?:\["reaction"\]|reaction)\s*=\s*"([^"]*)"/);
+                const zoneM   = block.match(/(?:\["zone"\]|zone)\s*=\s*"([^"]*)"/);
+                const areaM   = block.match(/(?:\["area"\]|area)\s*=\s*"([^"]*)"/);
+                const seenM   = block.match(/(?:\["seen_at"\]|seen_at)\s*=\s*"([^"]*)"/);
+
+                if (idM)     entry.npc_id         = parseInt(idM[1], 10);
+                if (nameM)   entry.name           = nameM[1];
+                if (titleM)  entry.title          = titleM[1];
+                if (lvlM)    entry.level          = parseInt(lvlM[1], 10);
+                if (classM)  entry.classification = classM[1];
+                if (typeM)   entry.creature_type  = typeM[1];
+                if (reactM)  entry.reaction       = reactM[1];
+                if (zoneM)   entry.zone           = zoneM[1];
+                if (areaM)   entry.area           = areaM[1];
+                if (seenM)   entry.seen_at        = seenM[1];
+
+                if (entry.name) {
+                    entry.name_en = entry.name;
+                    npcs.push(entry);
+                }
+            }
+        }
+    }
+
+    // 5. Parse Vendors
+    const vendors: any[] = [];
+    const vendorBlock = extractLuaBlock(content, 'vendors');
+    if (vendorBlock) {
+        const keyRegex = /\["([^"]+)"\]\s*=\s*\{/g;
+        let match;
+        while ((match = keyRegex.exec(vendorBlock)) !== null) {
+            const npcId = parseInt(match[1], 10);
+            const block = extractLuaBlock(vendorBlock.substring(match.index), match[1]);
+            if (block) {
+                const itemsBlock = extractLuaBlock(block, 'items');
+                if (itemsBlock) {
+                    const itemKeyRegex = /\["([^"]+)"\]\s*=\s*\{/g;
+                    let itemMatch;
+                    while ((itemMatch = itemKeyRegex.exec(itemsBlock)) !== null) {
+                        const iblock = extractLuaBlock(itemsBlock.substring(itemMatch.index), itemMatch[1]);
+                        if (iblock) {
+                            const entry: any = { npc_id: npcId };
+                            const idM = iblock.match(/(?:\["item_id"\]|item_id)\s*=\s*(\d+)/);
+                            const priceM = iblock.match(/(?:\["price"\]|price)\s*=\s*(\d+)/);
+                            const qtyM = iblock.match(/(?:\["quantity_sold"\]|quantity_sold)\s*=\s*(\d+)/);
+                            const stockM = iblock.match(/(?:\["stock"\]|stock)\s*=\s*(\d+)/);
+                            const extCostM = iblock.match(/(?:\["extended_cost"\]|extended_cost)\s*=\s*(\d+)/);
+
+                            if (idM) entry.item_id = parseInt(idM[1], 10);
+                            if (priceM) entry.price = parseInt(priceM[1], 10);
+                            if (qtyM) entry.quantity_sold = parseInt(qtyM[1], 10);
+                            if (stockM) entry.stock = parseInt(stockM[1], 10);
+                            if (extCostM) entry.extended_cost = parseInt(extCostM[1], 10);
+
+                            if (entry.item_id) {
+                                vendors.push(entry);
+                                seenItems.push(entry.item_id);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return { quests, inventoryItems, seenItems, seenItemsTimestamps, npcs, vendors };
 }
 
 let autoId = 9000;
@@ -156,15 +252,22 @@ function luaEntryToSupabase(key: string, entry: any) {
         reward_gold:     entry.reward_gold     || null,
         reward_items:    entry.reward_items?.length ? entry.reward_items : null,
         source:          'addon',
+        created_at:      entry.captured_at ? new Date(entry.captured_at).toISOString() : new Date().toISOString(),
     };
 }
 
-export async function importQuestsFromLua(fileContent: string, onProgress: (msg: string) => void) {
-    onProgress('Analizando archivo Lua...');
-    const parsedData = parseLuaString(fileContent);
+export async function processAddonData(
+    content: string, 
+    onProgress: (msg: string) => void
+): Promise<{ newQuests: any[], conflicts: any[], newItems: any[], newNpcs: any[], newVendors: any[], total: number }> {
+    onProgress('Parseando archivo Lua...');
+    const parsedData = parseLuaString(content);
     const quests = parsedData.quests;
     const inventoryItems = parsedData.inventoryItems;
     const seenItems = parsedData.seenItems;
+    const seenItemsTimestamps = parsedData.seenItemsTimestamps;
+    const npcs = parsedData.npcs;
+    const vendors = parsedData.vendors;
     
     const keys = Object.keys(quests);
 
@@ -203,21 +306,73 @@ export async function importQuestsFromLua(fileContent: string, onProgress: (msg:
     }
 
     onProgress('Extrayendo objetos y cruzando datos con Blizzard API...');
-    // Primero preparamos una lista de nombres a buscar y una lista de IDs a buscar.
     const uniqueItemNames = new Set<string>();
     const uniqueItemIds = new Set<number>(seenItems);
+    const basicItemData = new Map<number, any>();
+    const basicItemDataByName = new Map<string, any>();
     
     for (const row of parsedRows) {
         if (row.reward_items) {
             for (const item of row.reward_items) {
-                if (item.name) uniqueItemNames.add(item.name);
+                if (item.item_id) {
+                    uniqueItemIds.add(item.item_id); // ID capturado por el addon
+                    basicItemData.set(item.item_id, { name: item.name, quality: item.quality, captured_at: row.created_at });
+                } else if (item.name) {
+                    uniqueItemNames.add(item.name);  // Fallback por nombre
+                    basicItemDataByName.set(item.name, { quality: item.quality, captured_at: row.created_at });
+                }
             }
         }
     }
     
     for (const key in inventoryItems) {
-        if (inventoryItems[key].name) {
-            uniqueItemNames.add(inventoryItems[key].name);
+        const inv = inventoryItems[key];
+        if (inv.item_id) {
+            uniqueItemIds.add(inv.item_id);          // ID capturado por el addon
+            basicItemData.set(inv.item_id, { name: inv.name, quality: inv.quality, captured_at: inv.captured_at });
+        } else if (inv.name) {
+            uniqueItemNames.add(inv.name);           // Fallback por nombre
+            basicItemDataByName.set(inv.name, { quality: inv.quality, captured_at: inv.captured_at });
+        }
+    }
+
+    const getItemCreatedAt = (id?: number, name?: string) => {
+        const raw = (id && seenItemsTimestamps[id]) || (id && basicItemData.get(id)?.captured_at) || (name && basicItemDataByName.get(name)?.captured_at);
+        return raw ? new Date(raw).toISOString() : new Date().toISOString();
+    };
+
+
+    // 4.5. Filtrar items que ya están en la base de datos
+    onProgress('Buscando objetos existentes en la base de datos...');
+    
+    // Validar qué IDs ya existen
+    if (uniqueItemIds.size > 0) {
+        const { data: existingItemsById } = await supabase
+            .from('items')
+            .select('id')
+            .in('id', Array.from(uniqueItemIds));
+            
+        if (existingItemsById) {
+            existingItemsById.forEach(row => {
+                uniqueItemIds.delete(row.id);
+                // No necesitamos buscar de nuevo este item
+            });
+        }
+    }
+
+    // Validar qué nombres ya existen
+    const existingByName = new Map<string, number>(); // name -> id
+    if (uniqueItemNames.size > 0) {
+        const { data: existingItemsByName } = await supabase
+            .from('items')
+            .select('id, name')
+            .in('name', Array.from(uniqueItemNames));
+            
+        if (existingItemsByName) {
+            existingItemsByName.forEach(row => {
+                uniqueItemNames.delete(row.name);
+                existingByName.set(row.name, row.id);
+            });
         }
     }
 
@@ -225,69 +380,89 @@ export async function importQuestsFromLua(fileContent: string, onProgress: (msg:
     
     // --- 1. PROCESAR OBJETOS POR ID (seen_items de Wowhead Looter) ---
     if (uniqueItemIds.size > 0) {
-        onProgress(`Verificando ${uniqueItemIds.size} objetos avistados en DB...`);
-        // Para evitar errores por limites del in(), particionamos si son demasiados
         const idsArray = Array.from(uniqueItemIds);
-        const existingIds = new Set<number>();
-        
-        for (let i = 0; i < idsArray.length; i += 100) {
-            const chunk = idsArray.slice(i, i + 100);
-            const { data } = await supabase.from('items').select('id').in('id', chunk);
-            if (data) data.forEach(d => existingIds.add(d.id));
-        }
-        
-        const missingIds = idsArray.filter(id => !existingIds.has(id));
         let itemsProcessed = 0;
         
-        for (const itemId of missingIds) {
+        for (const itemId of idsArray) {
             itemsProcessed++;
-            onProgress(`Consultando Blizzard API: Objeto nuevo ${itemsProcessed} de ${missingIds.length} (ID: ${itemId})...`);
+            onProgress(`Consultando Blizzard API: Objeto ${itemsProcessed} de ${idsArray.length} (ID: ${itemId})...`);
             try {
                 const res = await fetch(`/api/blizzard/item?id=${itemId}`);
                 if (res.ok) {
                     const data = await res.json();
                     if (data.success && data.item) {
                         const blizz = data.item;
+                        const basic = basicItemData.get(itemId);
+                        if (!newItems.find(i => i.id === blizz.id)) {
+                            newItems.push({
+                                id: blizz.id,
+                                name: blizz.name,
+                                name_en: basic?.name || blizz.name,
+                                quality: blizz.quality,
+                                media: blizz.media,
+                                iconUrl: blizz.iconUrl,
+                                description: blizz.description,
+                                itemClass: blizz.itemClass,
+                                itemSubclass: blizz.itemSubclass,
+                                binding: blizz.binding,
+                                requiredLevel: blizz.requiredLevel,
+                                buy_price: blizz.purchasePrice,
+                                sell_price: blizz.sellPrice,
+                                created_at: getItemCreatedAt(blizz.id, basic?.name)
+                            });
+                        }
+                    } else {
+                        // Fallback si la API devuelve success: false
+                        const basic = basicItemData.get(itemId);
+                        if (!newItems.find(i => i.id === itemId)) {
+                            newItems.push({
+                                id: itemId,
+                                name: basic?.name || `Objeto Desconocido ${itemId}`,
+                                name_en: basic?.name || `Objeto Desconocido ${itemId}`,
+                                quality: { name: basic?.quality || 'Común' },
+                                iconUrl: null,
+                                created_at: getItemCreatedAt(itemId, basic?.name)
+                            });
+                        }
+                    }
+                } else {
+                    // Fallback si la API de Blizzard falla HTTP
+                    const basic = basicItemData.get(itemId);
+                    if (!newItems.find(i => i.id === itemId)) {
                         newItems.push({
-                            id: blizz.id,
-                            name: blizz.name,
-                            quality: blizz.quality,
-                            media: blizz.media,
-                            iconUrl: blizz.iconUrl,
-                            description: blizz.description,
-                            itemClass: blizz.itemClass,
-                            itemSubclass: blizz.itemSubclass,
-                            binding: blizz.binding,
-                            requiredLevel: blizz.requiredLevel
+                            id: itemId,
+                            name: basic?.name || `Objeto Desconocido ${itemId}`,
+                            name_en: basic?.name || `Objeto Desconocido ${itemId}`,
+                            quality: { name: basic?.quality || 'Común' },
+                            iconUrl: null,
+                            created_at: getItemCreatedAt(itemId, basic?.name)
                         });
                     }
                 }
             } catch (err) {
                 console.error(`Error fetch Blizzard item ID ${itemId}`, err);
+                const basic = basicItemData.get(itemId);
+                if (!newItems.find(i => i.id === itemId)) {
+                    newItems.push({
+                        id: itemId,
+                        name: basic?.name || `Objeto Desconocido ${itemId}`,
+                        name_en: basic?.name || `Objeto Desconocido ${itemId}`,
+                        quality: { name: basic?.quality || 'Común' },
+                        iconUrl: null,
+                        created_at: getItemCreatedAt(itemId, basic?.name)
+                    });
+                }
             }
         }
     }
 
     // --- 2. PROCESAR OBJETOS POR NOMBRE (Recompensas e Inventario clásico) ---
-    // Primero verificamos cuáles ya existen en la DB por nombre para no desperdiciar llamadas a Blizzard
     const namesArray = Array.from(uniqueItemNames);
-    const existingByName = new Map<string, number>(); // name -> id
-
-    if (namesArray.length > 0) {
-        onProgress(`Verificando ${namesArray.length} objetos por nombre en DB...`);
-        for (let i = 0; i < namesArray.length; i += 100) {
-            const chunk = namesArray.slice(i, i + 100);
-            const { data } = await supabase.from('items').select('id, name').in('name', chunk);
-            if (data) data.forEach(d => existingByName.set(d.name, d.id));
-        }
-    }
-
-    const missingNames = namesArray.filter(n => !existingByName.has(n));
     let nameItemsProcessed = 0;
 
-    for (const itemName of missingNames) {
+    for (const itemName of namesArray) {
         nameItemsProcessed++;
-        onProgress(`Consultando Blizzard API: Objeto por nombre ${nameItemsProcessed} de ${missingNames.length} (${itemName})...`);
+        onProgress(`Consultando Blizzard API: Objeto por nombre ${nameItemsProcessed} de ${namesArray.length} (${itemName})...`);
         try {
             const res = await fetch(`/api/blizzard/search-item?name=${encodeURIComponent(itemName)}`);
             if (res.ok) {
@@ -299,6 +474,7 @@ export async function importQuestsFromLua(fileContent: string, onProgress: (msg:
                         newItems.push({
                             id: blizz.id,
                             name: blizz.name,
+                            name_en: itemName,
                             quality: blizz.quality,
                             media: blizz.media,
                             iconUrl: blizz.iconUrl,
@@ -306,15 +482,37 @@ export async function importQuestsFromLua(fileContent: string, onProgress: (msg:
                             itemClass: blizz.itemClass,
                             itemSubclass: blizz.itemSubclass,
                             binding: blizz.binding,
-                            requiredLevel: blizz.requiredLevel
+                            requiredLevel: blizz.requiredLevel,
+                            buy_price: blizz.purchasePrice,
+                            sell_price: blizz.sellPrice,
+                            created_at: getItemCreatedAt(blizz.id, itemName)
                         });
-                        // Registramos en el map para el linkeo de recompensas
-                        existingByName.set(blizz.name, blizz.id);
+                    }
+                } else {
+                    const basic = basicItemDataByName.get(itemName);
+                    if (basic && !newItems.find(i => i.name === itemName)) {
+                        newItems.push({
+                            id: Math.floor(Math.random() * 1000000) + 9000000,
+                            name: itemName,
+                            quality: { name: basic.quality || 'Común' },
+                            iconUrl: null,
+                            created_at: getItemCreatedAt(undefined, itemName)
+                        });
                     }
                 }
             }
         } catch (err) {
             console.error(`Error fetch Blizzard item ${itemName}`, err);
+            const basic = basicItemDataByName.get(itemName);
+            if (basic && !newItems.find(i => i.name === itemName)) {
+                newItems.push({
+                    id: Math.floor(Math.random() * 1000000) + 9000000,
+                    name: itemName,
+                    quality: { name: basic.quality || 'Común' },
+                    iconUrl: null,
+                    created_at: getItemCreatedAt(undefined, itemName)
+                });
+            }
         }
     }
 
@@ -339,5 +537,28 @@ export async function importQuestsFromLua(fileContent: string, onProgress: (msg:
     newQuests.forEach(updateQuestRewards);
     conflicts.forEach(c => updateQuestRewards(c.imported));
 
-    return { newQuests, conflicts, newItems, total: keys.length };
+    // 5. Devolver NPCs parseados
+    onProgress('Preparando NPCs para insertar...');
+    let newNpcs = npcs.map(n => ({
+        ...n,
+        created_at: n.seen_at ? new Date(n.seen_at).toISOString() : new Date().toISOString()
+    }));
+    
+    if (newNpcs.length > 0) {
+        const npcIds = newNpcs.map(n => n.npc_id);
+        const { data: existingNpcs } = await supabase
+            .from('npcs')
+            .select('npc_id')
+            .in('npc_id', npcIds);
+            
+        if (existingNpcs && existingNpcs.length > 0) {
+            const existingSet = new Set(existingNpcs.map(n => n.npc_id));
+            newNpcs = newNpcs.filter(n => !existingSet.has(n.npc_id));
+        }
+    }
+
+    // 6. Devolver Vendedores
+    const newVendors = vendors;
+
+    return { newQuests, conflicts, newItems, newNpcs, newVendors, total: keys.length };
 }

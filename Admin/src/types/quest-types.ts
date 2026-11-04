@@ -2,14 +2,17 @@
 // Compartido entre los scripts de insercion y las utilidades del sitio Astro.
 
 export interface QuestRewardItem {
+    item_id?: number;
     name: string;
     quantity: number;
-    quality?: 'Poor' | 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary';
+    quality?: string;
+    choice?: boolean;
 }
 
 export interface Quest {
     id: number;
     title: string;
+    title_en?: string;
 
     // Contenido
     description?: string;
@@ -41,6 +44,7 @@ export interface Quest {
     reward_items?: QuestRewardItem[];
 
     // Metadata
+    image_url?: string;
     source?: string;
     notes?: string;
     created_at?: string;

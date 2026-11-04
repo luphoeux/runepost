@@ -42,7 +42,7 @@ async function main(): Promise<void> {
     let ok = 0;
     let failed = 0;
     for (const itemId of itemIds) {
-        const item = await getWoWItem(itemId, 'es_MX');
+        const item = await getWoWItem(itemId, 'en_US');
         if (item) {
             ok += 1;
             console.log(`  [OK] ${item.id} - ${item.name} (${item.quality.name})`);
@@ -54,9 +54,9 @@ async function main(): Promise<void> {
     console.log(`[wow:sync] Objetos: ${ok} sincronizados, ${failed} con errores.`);
 
     for (const region of ['us', 'eu']) {
-        const priceCopper = await getWoWTokenPrice(region);
-        if (priceCopper !== null) {
-            const gold = Math.floor(priceCopper / 10000);
+        const tokenData = await getWoWTokenPrice(region);
+        if (tokenData !== null) {
+            const gold = Math.floor(tokenData.price / 10000);
             console.log(`  [OK] WoW Token ${region.toUpperCase()}: ${gold.toLocaleString('es-ES')} g`);
         } else {
             console.error(`  [FALLO] WoW Token ${region.toUpperCase()}: no disponible`);

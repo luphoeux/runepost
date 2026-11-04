@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overlay WoW - Misión Activa</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            /* El fondo transparente es crítico para que OBS lo interprete correctamente */
+            background: transparent; 
+            font-family: 'Arial', sans-serif;
+            color: white;
+            overflow: hidden;
+        }
+        
+        #quest-container {
+            /* Estética estilo Warcraft */
+            background-color: rgba(15, 15, 15, 0.85);
+            border: 2px solid #C49B3E; 
+            border-radius: 6px;
+            padding: 12px 20px;
+            margin: 15px;
+            display: inline-block;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8);
+            
+            /* Animación de entrada/salida */
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            opacity: 0; 
+            transform: translateX(-20px);
+        }
+        
+        #quest-container.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .title {
+            font-size: 12px;
+            color: #FFD100;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        
+        .quest-name {
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 1px 1px 3px black;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="quest-container">
+        <div class="title">Misión en curso</div>
+        <div class="quest-name" id="quest-name">Esperando datos...</div>
+    </div>
+
+    <script>
+        const questContainer = document.getElementById('quest-container');
+        const questNameElement = document.getElementById('quest-name');
+
+        function connectWebSocket() {
+            const ws = new WebSocket('ws://localhost:8080');
+
+            ws.onopen = () => {
+                console.log('Conectado al servidor puente de WoW.');
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                if (data.id === "NONE" || !data.name) {
+                    questContainer.classList.remove('visible');
+                } else {
+                    questNameElement.innerText = data.name;
+                    questContainer.classList.add('visible');
+                }
+            };
+
+            ws.onclose = () => {
+                console.log('Desconectado. Reintentando en 3 segundos...');
+                questContainer.classList.remove('visible');
+                setTimeout(connectWebSocket, 3000);
+            };
+            
+            ws.onerror = (err) => {
+                console.error('Error de WebSocket:', err);
+                ws.close();
+            }
+        }
+
+        connectWebSocket();
+    </script>
+</body>
+</html>

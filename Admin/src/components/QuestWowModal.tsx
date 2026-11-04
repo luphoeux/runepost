@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { supabase } from '../lib/supabaseClient';
 import { XClose } from '@untitledui/icons';
 import type { Quest } from '../types/quest-types';
 
@@ -43,6 +44,7 @@ function normalizeRewardItems(raw: any): any[] {
 
 export default function QuestWowModal({ quest, onClose }: Props) {
     const overlayRef = useRef<HTMLDivElement>(null);
+    const [enrichedItems, setEnrichedItems] = useState<any[]>([]);
 
     useEffect(() => {
         const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -50,11 +52,42 @@ export default function QuestWowModal({ quest, onClose }: Props) {
         return () => document.removeEventListener('keydown', handleKey);
     }, [onClose]);
 
+    useEffect(() => {
+        if (!quest) return;
+        const items = normalizeRewardItems(quest.reward_items);
+        
+        async function fetchIcons() {
+            if (!items || items.length === 0) {
+                setEnrichedItems([]);
+                return;
+            }
+            
+            const itemIds = items.map((i: any) => i.item_id).filter(Boolean);
+            if (itemIds.length === 0) {
+                setEnrichedItems(items);
+                return;
+            }
+            
+            const { data } = await supabase.from('items').select('id, iconUrl').in('id', itemIds);
+            if (data && data.length > 0) {
+                const map = new Map(data.map(d => [d.id, d.iconUrl]));
+                const enriched = items.map((i: any) => ({ 
+                    ...i, 
+                    iconUrl: map.get(i.item_id) || i.iconUrl 
+                }));
+                setEnrichedItems(enriched);
+            } else {
+                setEnrichedItems(items);
+            }
+        }
+        
+        fetchIcons();
+    }, [quest]);
+
     if (!quest) return null;
 
-    const rewardItems: any[] = normalizeRewardItems(quest.reward_items);
-    const choiceItems = rewardItems.filter(i => i.choice);
-    const fixedItems = rewardItems.filter(i => !i.choice);
+    const choiceItems = enrichedItems.filter(i => i.choice);
+    const fixedItems = enrichedItems.filter(i => !i.choice);
 
     const money = quest.reward_gold ? goldToFormatted(quest.reward_gold) : null;
 
@@ -165,7 +198,7 @@ export default function QuestWowModal({ quest, onClose }: Props) {
                     )}
 
                     {/* Rewards section */}
-                    {(rewardItems.length > 0 || money || quest.reward_xp) && (
+                    {(enrichedItems.length > 0 || money || quest.reward_xp) && (
                         <section>
                             <WowSectionTitle>Recompensas</WowSectionTitle>
 
@@ -317,11 +350,11 @@ function WowItemBox({ item }: { item: any }) {
 }
 
 function GoldCoin() {
-    return <span title="Oro" style={{ display: 'inline-block', width: '14px', height: '14px', borderRadius: '50%', background: '#f0c060', border: '1.5px solid #b8960a', verticalAlign: 'middle' }} />;
+    return <img src="https://wow.zamimg.com/images/icons/money-gold.gif" alt="Oro" style={{ display: 'inline-block', width: '13px', height: '13px', verticalAlign: 'middle', marginLeft: '2px', marginRight: '4px' }} />;
 }
 function SilverCoin() {
-    return <span title="Plata" style={{ display: 'inline-block', width: '14px', height: '14px', borderRadius: '50%', background: '#d0d0d0', border: '1.5px solid #999', verticalAlign: 'middle' }} />;
+    return <img src="https://wow.zamimg.com/images/icons/money-silver.gif" alt="Plata" style={{ display: 'inline-block', width: '13px', height: '13px', verticalAlign: 'middle', marginLeft: '2px', marginRight: '4px' }} />;
 }
 function CopperCoin() {
-    return <span title="Cobre" style={{ display: 'inline-block', width: '14px', height: '14px', borderRadius: '50%', background: '#c87533', border: '1.5px solid #8b4513', verticalAlign: 'middle' }} />;
+    return <img src="https://wow.zamimg.com/images/icons/money-copper.gif" alt="Cobre" style={{ display: 'inline-block', width: '13px', height: '13px', verticalAlign: 'middle', marginLeft: '2px' }} />;
 }

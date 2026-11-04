@@ -1,0 +1,10 @@
+{
+  "name": "obs-quest-sync-server",
+  "version": "1.0.0",
+  "description": "Puente entre WoW Chat Log y OBS Studio",
+  "main": "server.js",
+  "dependencies": {
+    "tail": "^2.2.6",
+    "ws": "^8.16.0"
+  }
+}

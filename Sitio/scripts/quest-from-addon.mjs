@@ -11,7 +11,6 @@ import { createClient } from '@supabase/supabase-js';
 
 /* ---------- Config ---------- */
 
-const WOW_BASE = 'E:\\World of Warcraft\\_classic_beta_\\WTF\\Account';
 const SAVED_VAR_FILENAME = 'QuestScraper.lua';
 
 /* ---------- Entorno ---------- */
@@ -35,37 +34,81 @@ function getSupabase() {
 
 /* ---------- Buscar el archivo SavedVariables ---------- */
 
-function findSavedVarsFile() {
-    if (!fs.existsSync(WOW_BASE)) {
-        throw new Error(`No se encontro la carpeta WTF/Account en: ${WOW_BASE}`);
+function getCandidateWowAccountDirs() {
+    const customPath = loadEnv('WOW_PATH');
+    const baseCandidates = [
+        customPath,
+        'E:\\World of Warcraft',
+        'C:\\Program Files (x86)\\World of Warcraft',
+        'C:\\World of Warcraft',
+        'D:\\World of Warcraft',
+    ].filter(Boolean);
+
+    // Prioridad 1: The War Within: Forever (_forever_), Prioridad 2: Retail (_retail_)
+    const flavors = ['_forever_', '_retail_', '_classic_beta_', '_ptr_', '_xptr_'];
+    const accountDirs = [];
+
+    for (const base of baseCandidates) {
+        for (const flavor of flavors) {
+            const candidate = path.join(base, flavor, 'WTF', 'Account');
+            if (fs.existsSync(candidate) && !accountDirs.includes(candidate)) {
+                accountDirs.push(candidate);
+            }
+        }
+        const directAccount = path.join(base, 'WTF', 'Account');
+        if (fs.existsSync(directAccount) && !accountDirs.includes(directAccount)) {
+            accountDirs.push(directAccount);
+        }
     }
-    // Buscar en todas las cuentas
-    const accounts = fs.readdirSync(WOW_BASE, { withFileTypes: true })
-        .filter(d => d.isDirectory())
-        .map(d => d.name);
+
+    return accountDirs;
+}
+
+function findSavedVarsFile() {
+    const accountDirs = getCandidateWowAccountDirs();
+    if (accountDirs.length === 0) {
+        throw new Error('No se encontro la carpeta WTF/Account en las rutas de WoW configuradas o detectadas.');
+    }
 
     const candidates = [];
-    for (const account of accounts) {
-        const candidate = path.join(WOW_BASE, account, 'SavedVariables', SAVED_VAR_FILENAME);
-        if (fs.existsSync(candidate)) {
-            candidates.push(candidate);
-        }
+    for (const accountDir of accountDirs) {
+        try {
+            const accounts = fs.readdirSync(accountDir, { withFileTypes: true })
+                .filter(d => d.isDirectory())
+                .map(d => d.name);
+
+            for (const account of accounts) {
+                const candidate = path.join(accountDir, account, 'SavedVariables', SAVED_VAR_FILENAME);
+                if (fs.existsSync(candidate)) {
+                    const stat = fs.statSync(candidate);
+                    candidates.push({ path: candidate, mtime: stat.mtimeMs });
+                }
+            }
+
+            const sharedCandidate = path.join(accountDir, 'SavedVariables', SAVED_VAR_FILENAME);
+            if (fs.existsSync(sharedCandidate)) {
+                const stat = fs.statSync(sharedCandidate);
+                candidates.push({ path: sharedCandidate, mtime: stat.mtimeMs });
+            }
+        } catch { }
     }
 
     if (candidates.length === 0) {
         throw new Error(
             `No se encontro ${SAVED_VAR_FILENAME}. ` +
-            'Asegurate de haber entrado al juego con el addon activado y abierto al menos una mision.'
+            'Asegurate de haber entrado al juego con el addon activado, interactuar con misiones y ejecutar /reload o salir del personaje.'
         );
     }
 
+    candidates.sort((a, b) => b.mtime - a.mtime);
+
     if (candidates.length > 1) {
-        console.log('[addon-import] Multiples cuentas encontradas:');
-        candidates.forEach((c, i) => console.log(`  [${i}] ${c}`));
-        console.log('[addon-import] Usando la primera. Edita el script para cambiarla.');
+        console.log('[addon-import] Archivos de SavedVariables encontrados:');
+        candidates.forEach((c, i) => console.log(`  [${i}] ${c.path} (modificado: ${new Date(c.mtime).toISOString()})`));
+        console.log(`[addon-import] Usando el mas reciente: ${candidates[0].path}`);
     }
 
-    return candidates[0];
+    return candidates[0].path;
 }
 
 /* ---------- Parser de Lua SavedVariables ---------- */

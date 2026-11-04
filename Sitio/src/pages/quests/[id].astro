@@ -563,9 +563,9 @@ function formatDialog(text: string): string[] {
         top: 0;
         left: 100%;
         margin-left: 10px;
-        background: #070711; /* Color muy oscuro, casi negro, con tono azulado */
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        border-radius: 4px;
+        background: linear-gradient(180deg, rgba(38, 32, 25, 0.98) 0%, rgba(13, 11, 9, 0.98) 100%);
+        border: 1px solid #a1844a;
+        border-radius: 3px;
         padding: 10px;
         width: max-content;
         max-width: 300px;
@@ -577,7 +577,7 @@ function formatDialog(text: string): string[] {
         font-size: 0.85rem;
         text-align: left;
         line-height: 1.4;
-        box-shadow: 0 0 0 1px #000, 2px 2px 8px rgba(0,0,0,0.8);
+        box-shadow: inset 0 0 0 1px #14100b, 0 4px 14px rgba(0, 0, 0, 0.85);
     }
 
     .wow-item-wrap:hover .wow-game-tooltip {
